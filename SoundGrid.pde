@@ -8,7 +8,7 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 
 int bandbreite = 100;
-int unterteilungen = 8;
+int unterteilungen = 64;
 
 int bandbreiteOld;
 int unterteilungenOld;
@@ -41,7 +41,7 @@ void setup(){
   cp5 = new ControlP5(this);
   minim = new Minim(this);
   
-  input = minim.loadFile("data/sounds of life - currents.mp3");
+  input = minim.loadFile("data/4hero1.mp3");
   
 
   
@@ -116,20 +116,23 @@ void renew(){
   fftReal.logAverages(bandbreite, unterteilungen);
   background (0);   
   int sqSize = floor(sqrt(fftReal.avgSize())* 0.8);
-  points = new float[(sqSize*sqSize)][5];
+  points = new float[(sqSize*sqSize)][7];
   /*
-  0,1  Postion X/Y
-  2,3  Directional Vector
+  0,1  act. Postion X/Y
+  2,3  dir. Vector
   4    Gravity
+  5,6  org. Position X/Y
   */
   
   //Grid 
   for (int i = 0; i<sqSize; i++){
     for (int ii = 0; ii<sqSize; ii++){
-      points[i*sqSize+ii][0] = (size/sqSize) * (i+0.5) + random (-size/50, size/40);
-      points[i*sqSize+ii][1] = (size/sqSize) * (ii+0.5) + random (-size/40, size/50);
+      points[i*sqSize+ii][0] = (size/sqSize) * (i+0.5) + random (-1, 1);
+      points[i*sqSize+ii][1] = (size/sqSize) * (ii+0.5) + random (-1, 1);
+      println (points[i*sqSize+ii][0]+ " // "+points[i*sqSize+ii][1]);
       
-      println("ps "+getPoisson(100));
+      points[i*sqSize+ii][5] = points[i*sqSize+ii][0];
+      points[i*sqSize+ii][6] = points[i*sqSize+ii][1];
       
       //points[i*sqSize+ii][2] = points[i*sqSize+ii][0];
       //points[i*sqSize+ii][3] = points[i*sqSize+ii][1];
@@ -155,7 +158,6 @@ void generateVertices(){
   vertices = new IntList();
   for(int i=0; i<points.length; i++)
   {
-      if (true || points[i][4] > 7){
       int [] links = myDelaunay.getLinked(i);
       if (links.length == 2){
           if ( containsValue(myDelaunay.getLinked(links[0]), links[1]) && containsValue(myDelaunay.getLinked(links[1]), links[0])){
@@ -179,9 +181,7 @@ void generateVertices(){
                }
             }
          }
-      
-  }
-      }
+     }
 }
 
 void draw (){  
@@ -227,54 +227,78 @@ void draw (){
  // max = 100;
   
   
-  stroke (0, 100, 0);
-  fill ( 0,0, 100 );
-  beginShape(TRIANGLES);  
-  for (int i = 0; i<vertices.size(); i=i+3){    
-      vertex(points[vertices.get(i)][0], points[vertices.get(i)][1], points[vertices.get(i)][4]);    
-      vertex(points[vertices.get(i+1)][0], points[vertices.get(i+1)][1], points[vertices.get(i+1)][4]);
-      vertex(points[vertices.get(i+2)][0], points[vertices.get(i+2)][1], points[vertices.get(i+2)][4]);
-  }
-  endShape();
-  
- //noStroke();
+  //stroke (0, 100, 0);
+ // noStroke();
  
-  for(int i=0; i<points.length; i++)
+  
+ 
+  for(int i=1; i<points.length; i++)
   { 
     int [] links = myDelaunay.getLinked(i);
     float locX = points[i][0];
     float locY = points[i][1];
-    float locGrv = points[i][4];
+   
     
-    if ( fftReal.getAvg(i) > points[i][4]){
+   if ( fftReal.getAvg(i) > points[i][4] && fftReal.getAvg(i) > avg/4 ){
+   //if ( fftReal.getAvg(i) > avg/2){
       // points[i][4] += fftReal.getAvg(i)* 1/frameRate*30;
-       points[i][4] += fftReal.getAvg(i)/avg*10;
+       points[i][4] = (fftReal.getAvg(i)*10);
     } else {
-       points[i][4] = points[i][4] * 0.95;
+       points[i][4] = points[i][4] * 0.98;
     }
+    
+    float locGrv = points[i][4];
     fill ( points[i][4] ,100, 100 );
     
     int grvX = 0;
     int grvY = 0;
-    for (int ii=0; ii < links.length; ii++){
-      float [] pnt = points[links[ii]];
-      float diff = abs( 100 - (100/locGrv)* pnt[4]);
-      float factor = 0;
-      if (diff < 10){
-        factor = 0.15;
-      } else if (diff > 90){
-        //factor = -0.07;
-      }
-      
-      float distance = dist(locX, locY, pnt[0], pnt[1]);
-      
-      //factor *= lerp( distance, 0, 10)/10;
-      
-      grvX += (pnt[0] - locX) * (pnt[4] * locGrv)/10  / links.length * factor;
-      grvY += (pnt[1] - locY) * (pnt[4] * locGrv)/10  / links.length * factor;
-     
-     }
+    float maxDist = size / unterteilungen;
     
+    maxDist = dist (0,0, maxDist, maxDist);
+    
+    maxDist = 100;
+    
+    for (int ii=1; ii < links.length; ii++){
+      float [] pnt = points[links[ii]];
+      //float distance = dist(locX, locY, pnt[0], pnt[1]);
+     // float gravity = pow(map (min (distance, maxDist), 0, maxDist, 1, 0),2);
+      //gravity = 1 - (gravity / maxDist);
+      //gravity = gravity*gravity;
+      //println (distance+ "  "+maxDist+"  "+gravity);
+      //float diff = abs( 100 - (100/locGrv)* pnt[4]);
+      
+      
+      float factor = 0;
+      //if (locGrv > avg ){    
+          //factor *= lerp( distance, 0, 10)/10;
+          // grvX += (pnt[0] - locX) * (pnt[4]  * locGrv)/100  / gravity;
+          // grvY += (pnt[1] - locY) * (pnt[4]  * locGrv)/100  / gravity;
+         float distance = dist(locX, locY, pnt[0], pnt[1]);
+         float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
+      
+         grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length;
+         grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length;
+        
+      /*} else {
+         float distance = dist(locX, locY, pnt[0], pnt[1]);
+         float gravity = pow(map (min (distance, maxDist), 0, maxDist, 1, 0),2);
+      
+         grvX += (pnt[0] - points[i][5]) * pnt[4] * 0.25;
+         grvY += (pnt[1] - points[i][6]) * pnt[4] * 0.25;
+         points[i][0] = points[i][5];
+         points[i][1] = points[i][6];
+      }*/
+      
+     
+     
+    }
+    
+    float distance = dist(locX, locY, points[i][5], points[i][6]);
+    float gravity = pow(map (constrain (distance, 0, maxDist*2), 0, maxDist*2, 1, 0),2);
+    println (grvX);
+    grvX += -(points[i][0] - points[i][5])*25;
+    grvY += -(points[i][1] - points[i][6])*25;  
+      
     points[i][2] = grvX * 1/frameRate*0.01;
     points[i][3] = grvY * 1/frameRate*0.01;
     
@@ -336,7 +360,18 @@ void draw (){
   // line (0, 0, 1, 10, 0, 1);
      
   //    translate (Global.fieldSize/2 + Global.gravX, -Global.fieldSize / pow (2, Global.recursion), Global.fieldSize/2 + Global.gravY); 
-    // sphere (10);  
+    // sphere (10); 
+   
+    fill ( 0,0, 100 );
+  beginShape(TRIANGLES); 
+ 
+  noStroke(); 
+  for (int i = 0; i<vertices.size(); i=i+3){    
+      vertex(points[vertices.get(i)][0], points[vertices.get(i)][1], points[vertices.get(i)][4]/4);    
+      vertex(points[vertices.get(i+1)][0], points[vertices.get(i+1)][1], points[vertices.get(i+1)][4]/4);
+      vertex(points[vertices.get(i+2)][0], points[vertices.get(i+2)][1], points[vertices.get(i+2)][4]/4);
+  }
+  endShape(); 
   popMatrix();
  
 }
