@@ -8,7 +8,7 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 
 int bandbreite = 100;
-int unterteilungen = 64;
+int unterteilungen = 32;
 
 int bandbreiteOld;
 int unterteilungenOld;
@@ -41,7 +41,7 @@ void setup(){
   cp5 = new ControlP5(this);
   minim = new Minim(this);
   
-  input = minim.loadFile("data/4hero1.mp3");
+  input = minim.loadFile("data/sounds of life - currents.mp3");
   
 
   
@@ -239,7 +239,7 @@ void draw (){
     float locY = points[i][1];
    
     
-   if ( fftReal.getAvg(i) > points[i][4] && fftReal.getAvg(i) > avg/4 ){
+   if ( fftReal.getAvg(i) > points[i][4] && fftReal.getAvg(i) > avg * 0.1 ){
    //if ( fftReal.getAvg(i) > avg/2){
       // points[i][4] += fftReal.getAvg(i)* 1/frameRate*30;
        points[i][4] = (fftReal.getAvg(i)*10);
@@ -252,11 +252,11 @@ void draw (){
     
     int grvX = 0;
     int grvY = 0;
-    float maxDist = size / unterteilungen;
+    float maxDist = 5 * (size / unterteilungen);
     
-    maxDist = dist (0,0, maxDist, maxDist);
+    //maxDist = dist (0,0, maxDist, maxDist);
     
-    maxDist = 100;
+   // maxDist = 100;
     
     for (int ii=1; ii < links.length; ii++){
       float [] pnt = points[links[ii]];
@@ -274,7 +274,7 @@ void draw (){
           // grvX += (pnt[0] - locX) * (pnt[4]  * locGrv)/100  / gravity;
           // grvY += (pnt[1] - locY) * (pnt[4]  * locGrv)/100  / gravity;
          float distance = dist(locX, locY, pnt[0], pnt[1]);
-         float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
+         float gravity = 2*pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
       
          grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length;
          grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length;
@@ -294,7 +294,7 @@ void draw (){
     }
     
     float distance = dist(locX, locY, points[i][5], points[i][6]);
-    float gravity = pow(map (constrain (distance, 0, maxDist*2), 0, maxDist*2, 1, 0),2);
+    float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
     println (grvX);
     grvX += -(points[i][0] - points[i][5])*25;
     grvY += -(points[i][1] - points[i][6])*25;  
