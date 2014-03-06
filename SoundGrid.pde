@@ -218,14 +218,12 @@ void draw (){
   fftReal.forward(input.left);
   
    
-  float max = 0;   
+  float avg = 0;   
   for(int i=0; i<points.length; i++)
   {    
-     float newV = fftReal.getAvg(i);
-     if (newV > max){
-       max = newV;
-     }
+     avg += fftReal.getAvg(i);
   }
+  avg = avg / points.length;
  // max = 100;
   
   
@@ -250,7 +248,7 @@ void draw (){
     
     if ( fftReal.getAvg(i) > points[i][4]){
       // points[i][4] += fftReal.getAvg(i)* 1/frameRate*30;
-       points[i][4] += fftReal.getAvg(i)/max*10;
+       points[i][4] += fftReal.getAvg(i)/avg*10;
     } else {
        points[i][4] = points[i][4] * 0.95;
     }
