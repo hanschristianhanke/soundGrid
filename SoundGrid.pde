@@ -47,8 +47,8 @@ void setup(){
   float x = 20;
   float y = 20;
   float sliderSpace = 20;
-  cp5.addSlider("bandbreite").setPosition(x,y +=sliderSpace).setRange(10,5000);
-  cp5.addSlider("unterteilungen").setPosition(x,y +=sliderSpace).setRange(1,75);
+  //cp5.addSlider("bandbreite").setPosition(x,y +=sliderSpace).setRange(10,5000);
+  //cp5.addSlider("unterteilungen").setPosition(x,y +=sliderSpace).setRange(1,75);
   
   bandbreiteOld = bandbreite;
   unterteilungenOld = unterteilungen;
@@ -137,7 +137,7 @@ void renew(){
   }
  
   int arrsize = sqSize*sqSize;
-  float step = size / (sqSize+1);
+  float step = size / (sqSize);
   for (int i = 0; i<sqSize+2; i++){
     Global.points[arrsize+i*4+0][0] = step * i;
     Global.points[arrsize+i*4+0][1] = 0; 
@@ -339,7 +339,7 @@ void draw (){
     //points[i][0] = points[i][2] + random (-0.1, 0.1)*fftReal.getAvg(i);
     //points[i][1] = points[i][3] + random (-0.1, 0.1)*fftReal.getAvg(i);
     text("Frq "+fftReal.getAverageCenterFrequency(i), Global.points[i][0]-5, Global.points[i][1] -15); 
-  
+  /*
     int count = 0;
     for(int ii=0; ii<myLinks.length; ii++)
     {
@@ -357,7 +357,7 @@ void draw (){
           text("Cnt "+count, startX+ (endX-startX)/2, startY+ (endY-startY)/2); 
            count++;
       }
-    }
+    }*/
   }
  
    
