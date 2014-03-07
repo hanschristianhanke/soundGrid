@@ -8,7 +8,7 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 
 int bandbreite = 50;
-int unterteilungen = 10;
+int unterteilungen = 6;
 
 int bandbreiteOld;
 int unterteilungenOld;
@@ -34,13 +34,14 @@ float t = 0;
 int secondsRun = 0;
 
 PShader vertexShader;
+int mode = 0;
 
 void setup(){
   size (size, size, OPENGL);
   cp5 = new ControlP5(this);
   minim = new Minim(this);
   
-  input = minim.loadFile("data/hannibal.mp3");
+  input = minim.loadFile("data/Timecode.mp3");
   
 
   
@@ -112,7 +113,7 @@ boolean containsEachOther (int a, int [] arrayA, int b, int [] arrayB){
 }
 
 void renew(){
-  fftReal.logAverages(bandbreite, unterteilungen);
+  fftReal.logAverages(bandbreite, unterteilungenOld);
   background (0);   
   sqSize = floor(sqrt(fftReal.avgSize())* 0.8);
   Global.points = new float[(sqSize*sqSize)+ (sqSize+2)*4][7];
@@ -124,18 +125,29 @@ void renew(){
   */
   
   //Grid 
- 
-  for (int i = 0; i<sqSize; i++){
-    for (int ii = 0; ii<sqSize; ii++){
-      Global.points[i*sqSize+ii][0] = (size/sqSize) * (i+0.5) + random (-5, 5);
-      Global.points[i*sqSize+ii][1] = (size/sqSize) * (ii+0.5) + random (-5, 5);
-      println (Global.points[i*sqSize+ii][0]+ " // "+Global.points[i*sqSize+ii][1]);
-      
-      Global.points[i*sqSize+ii][5] = Global.points[i*sqSize+ii][0];
-      Global.points[i*sqSize+ii][6] = Global.points[i*sqSize+ii][1];
+  if (mode == 0){
+    for (int i = 0; i<sqSize; i++){
+      for (int ii = 0; ii<sqSize; ii++){
+        Global.points[i*sqSize+ii][0] = (size/sqSize) * (i+0.5) + random (-5, 5);
+        Global.points[i*sqSize+ii][1] = (size/sqSize) * (ii+0.5) + random (-5, 5);
+        println (Global.points[i*sqSize+ii][0]+ " // "+Global.points[i*sqSize+ii][1]);
+        
+        Global.points[i*sqSize+ii][5] = Global.points[i*sqSize+ii][0];
+        Global.points[i*sqSize+ii][6] = Global.points[i*sqSize+ii][1];
+      }
     }
   }
  
+ //Random
+  if (mode == 1){
+    for (int i = 0; i<sqSize*sqSize; i++){   
+      Global.points[i][0] = random(0, size);
+      Global.points[i][1] = random(0, size);   
+      Global.points[i][5] = Global.points[i][0];
+      Global.points[i][6] = Global.points[i][1];
+    }
+  }
+  
   int arrsize = sqSize*sqSize;
   float step = size / (sqSize);
   for (int i = 0; i<sqSize+2; i++){
@@ -153,14 +165,6 @@ void renew(){
   }
   
   
-  //Random
-  /*
-  for (int i = 0; i<sqSize*sqSize; i++){   
-    Global.points[i][0] = random(0, size);
-    Global.points[i][1] = random(0, size);   
-    Global.points[i][5] = Global.points[i][0];
-    Global.points[i][6] = Global.points[i][1];
-  }*/
   
   //SPIRALE
   /*
@@ -211,6 +215,17 @@ void generateVertices(){
 }
 
 void draw (){  
+  
+  float avg = 0;   
+  for(int i=0; i<Global.points.length; i++)
+  {    
+     avg += fftReal.getAvg(i);
+  }
+  avg = avg / Global.points.length;
+  
+  
+  //println (avg);
+  //unterteilungen = floor( constrain( avg, 6, 32));
   if (bandbreiteOld != bandbreite ||  unterteilungenOld != unterteilungen){
     bandbreiteOld = bandbreite;
     unterteilungenOld = unterteilungen;
@@ -244,12 +259,7 @@ void draw (){
   fftReal.forward(input.left);
   
    
-  float avg = 0;   
-  for(int i=0; i<Global.points.length; i++)
-  {    
-     avg += fftReal.getAvg(i);
-  }
-  avg = avg / Global.points.length;
+  
  // max = 100;
   
   
@@ -281,7 +291,7 @@ void draw (){
     
     int grvX = 0;
     int grvY = 0;
-    float maxDist = 5 * (size / unterteilungen);
+    float maxDist = 5 * (size / unterteilungenOld);
     
     //maxDist = dist (0,0, maxDist, maxDist);
     
@@ -305,8 +315,8 @@ void draw (){
          float distance = dist(locX, locY, pnt[0], pnt[1]);
          float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
       
-         grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length;
-         grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length;
+         grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length*3;
+         grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length*3;
         
       /*} else {
          float distance = dist(locX, locY, pnt[0], pnt[1]);
@@ -324,9 +334,9 @@ void draw (){
     
     float distance = dist(locX, locY, Global.points[i][5], Global.points[i][6]);
     float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
-    println (grvX);
-    grvX += -(Global.points[i][0] - Global.points[i][5])*avg*5;
-    grvY += -(Global.points[i][1] - Global.points[i][6])*avg*5;  
+    //println (grvX);
+    grvX += -(Global.points[i][0] - Global.points[i][5])*avg*25;
+    grvY += -(Global.points[i][1] - Global.points[i][6])*avg*25;  
       
     Global.points[i][2] = grvX * 1/frameRate*0.01;
     Global.points[i][3] = grvY * 1/frameRate*0.01;
@@ -396,7 +406,7 @@ void draw (){
   noStroke(); 
   fill (0, 0, 100);
   for (int i = 0; i<Global.vertices.size(); i=i+3){    
-     // fill ( (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/3 ,10, 100 );
+      fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
       vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
       vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
       vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
@@ -404,6 +414,7 @@ void draw (){
   endShape(); 
   popMatrix();
  
+  
 }
 
 void pyramidSquare (float beginX, float beginY, float endX, float endY, int recursion){
