@@ -11,4 +11,7 @@ static class Global {
   static public int mainEmitterY = 0;
   static public int mainEmitterZ = 0;
   static public float escapeVelocity = 5;
+  
+  static public float [][] points;
+  static public IntList vertices = new IntList();
 }

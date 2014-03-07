@@ -7,7 +7,7 @@ import ddf.minim.*;
 import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 
-int bandbreite = 100;
+int bandbreite = 250;
 int unterteilungen = 32;
 
 int bandbreiteOld;
@@ -23,8 +23,7 @@ ControlP5 cp5;
 int size = 800;
 
 int num = 11;
-float [][] points;
-IntList vertices = new IntList();
+
 
 Delaunay myDelaunay;
 
@@ -41,7 +40,7 @@ void setup(){
   cp5 = new ControlP5(this);
   minim = new Minim(this);
   
-  input = minim.loadFile("data/sounds of life - currents.mp3");
+  input = minim.loadFile("data/hannibal.mp3");
   
 
   
@@ -116,7 +115,7 @@ void renew(){
   fftReal.logAverages(bandbreite, unterteilungen);
   background (0);   
   int sqSize = floor(sqrt(fftReal.avgSize())* 0.8);
-  points = new float[(sqSize*sqSize)][7];
+  Global.points = new float[(sqSize*sqSize)][7];
   /*
   0,1  act. Postion X/Y
   2,3  dir. Vector
@@ -125,14 +124,15 @@ void renew(){
   */
   
   //Grid 
+ 
   for (int i = 0; i<sqSize; i++){
     for (int ii = 0; ii<sqSize; ii++){
-      points[i*sqSize+ii][0] = (size/sqSize) * (i+0.5) + random (-1, 1);
-      points[i*sqSize+ii][1] = (size/sqSize) * (ii+0.5) + random (-1, 1);
-      println (points[i*sqSize+ii][0]+ " // "+points[i*sqSize+ii][1]);
+      Global.points[i*sqSize+ii][0] = (size/sqSize) * (i+0.5) + random (-5, 5);
+      Global.points[i*sqSize+ii][1] = (size/sqSize) * (ii+0.5) + random (-5, 5);
+      println (Global.points[i*sqSize+ii][0]+ " // "+Global.points[i*sqSize+ii][1]);
       
-      points[i*sqSize+ii][5] = points[i*sqSize+ii][0];
-      points[i*sqSize+ii][6] = points[i*sqSize+ii][1];
+      Global.points[i*sqSize+ii][5] = Global.points[i*sqSize+ii][0];
+      Global.points[i*sqSize+ii][6] = Global.points[i*sqSize+ii][1];
       
       //points[i*sqSize+ii][2] = points[i*sqSize+ii][0];
       //points[i*sqSize+ii][3] = points[i*sqSize+ii][1];
@@ -140,11 +140,14 @@ void renew(){
   }
   
   //Random
-  /*for (int i = 0; i<sqSize*sqSize; i++){   
-    points[i][0] = random(0, size);
-    points[i][1] = random(0, size);      
-  }*/
-  
+  /*
+  for (int i = 0; i<sqSize*sqSize; i++){   
+    Global.points[i][0] = random(0, size);
+    Global.points[i][1] = random(0, size);   
+    Global.points[i][5] = Global.points[i][0];
+    Global.points[i][6] = Global.points[i][1];
+  }
+  */
  
   fftReal.window(FFT.HAMMING);
   
@@ -153,17 +156,17 @@ void renew(){
 }
 
 void generateVertices(){  
-  myDelaunay = new Delaunay( points );
+  myDelaunay = new Delaunay( Global.points );
   myLinks = myDelaunay.getLinks(); 
-  vertices = new IntList();
-  for(int i=0; i<points.length; i++)
+  Global.vertices = new IntList();
+  for(int i=0; i<Global.points.length; i++)
   {
       int [] links = myDelaunay.getLinked(i);
       if (links.length == 2){
           if ( containsValue(myDelaunay.getLinked(links[0]), links[1]) && containsValue(myDelaunay.getLinked(links[1]), links[0])){
-              vertices.append(i);
-              vertices.append(links[0]);
-              vertices.append(links[1]);
+              Global.vertices.append(i);
+              Global.vertices.append(links[0]);
+              Global.vertices.append(links[1]);
           }
       } else if (links.length > 2){
          for (int a=0; a<links.length; a++){
@@ -174,9 +177,9 @@ void generateVertices(){
                  //if (containsValue(linksA, b) && containsValue(linksB, a)){
                  
                    //println ("node "+i+" "+links[a]+"  "+links[b]);
-                   vertices.append(i);
-                   vertices.append(links[a]);
-                   vertices.append(links[b]);
+                   Global.vertices.append(i);
+                   Global.vertices.append(links[a]);
+                   Global.vertices.append(links[b]);
                   }
                }
             }
@@ -198,7 +201,7 @@ void draw (){
   int secs = floor(t);
   if (secs != secondsRun){  
     secondsRun = secs;
-    generateVertices();
+    //generateVertices();
   }
   
   pushMatrix();
@@ -209,7 +212,7 @@ void draw (){
   //blendMode(ADD);  
  
  // translate (Global.fieldSize/2, Global.fieldSize/2, 0); 
-  pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize/2);  
+  pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
   //directionalLight(126, 126, 126, Global.fieldSize/2 + Global.gravX, -Global.fieldSize, Global.fieldSize/2 + Global.gravY);
   //ambientLight(72, 72, 102);
 
@@ -219,11 +222,11 @@ void draw (){
   
    
   float avg = 0;   
-  for(int i=0; i<points.length; i++)
+  for(int i=0; i<Global.points.length; i++)
   {    
      avg += fftReal.getAvg(i);
   }
-  avg = avg / points.length;
+  avg = avg / Global.points.length;
  // max = 100;
   
   
@@ -232,23 +235,24 @@ void draw (){
  
   
  
-  for(int i=1; i<points.length; i++)
+  for(int i=1; i<Global.points.length; i++)
   { 
     int [] links = myDelaunay.getLinked(i);
-    float locX = points[i][0];
-    float locY = points[i][1];
+    float locX = Global.points[i][0];
+    float locY = Global.points[i][1];
    
     
-   if ( fftReal.getAvg(i) > points[i][4] && fftReal.getAvg(i) > avg * 0.1 ){
+   if ( (fftReal.getAvg(i)/avg)*10 > Global.points[i][4] && fftReal.getAvg(i) > avg * 0.25 ){
    //if ( fftReal.getAvg(i) > avg/2){
       // points[i][4] += fftReal.getAvg(i)* 1/frameRate*30;
-       points[i][4] = (fftReal.getAvg(i)*10);
+       //Global.points[i][4] = (fftReal.getAvg(i)/avg)*15;
+       Global.points[i][4] += (fftReal.getAvg(i)/avg);
     } else {
-       points[i][4] = points[i][4] * 0.98;
+       Global.points[i][4] = Global.points[i][4] * 0.98;
     }
     
-    float locGrv = points[i][4];
-    fill ( points[i][4] ,100, 100 );
+    float locGrv = Global.points[i][4];
+    fill ( Global.points[i][4] ,100, 100 );
     
     int grvX = 0;
     int grvY = 0;
@@ -259,7 +263,7 @@ void draw (){
    // maxDist = 100;
     
     for (int ii=1; ii < links.length; ii++){
-      float [] pnt = points[links[ii]];
+      float [] pnt = Global.points[links[ii]];
       //float distance = dist(locX, locY, pnt[0], pnt[1]);
      // float gravity = pow(map (min (distance, maxDist), 0, maxDist, 1, 0),2);
       //gravity = 1 - (gravity / maxDist);
@@ -276,8 +280,8 @@ void draw (){
          float distance = dist(locX, locY, pnt[0], pnt[1]);
          float gravity = 2*pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
       
-         grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length;
-         grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length;
+         grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length*2;
+         grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length*2;
         
       /*} else {
          float distance = dist(locX, locY, pnt[0], pnt[1]);
@@ -293,25 +297,24 @@ void draw (){
      
     }
     
-    float distance = dist(locX, locY, points[i][5], points[i][6]);
+    float distance = dist(locX, locY, Global.points[i][5], Global.points[i][6]);
     float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
     println (grvX);
-    grvX += -(points[i][0] - points[i][5])*25;
-    grvY += -(points[i][1] - points[i][6])*25;  
+    grvX += -(Global.points[i][0] - Global.points[i][5])*avg*5;
+    grvY += -(Global.points[i][1] - Global.points[i][6])*avg*5;  
       
-    points[i][2] = grvX * 1/frameRate*0.01;
-    points[i][3] = grvY * 1/frameRate*0.01;
+    Global.points[i][2] = grvX * 1/frameRate*0.01;
+    Global.points[i][3] = grvY * 1/frameRate*0.01;
     
-    points[i][0] += points[i][2];
-    points[i][1] += points[i][3];
+    Global.points[i][0] += Global.points[i][2];
+    Global.points[i][1] += Global.points[i][3];
     
     textSize(10);
     
     //points[i][0] = points[i][2] + random (-0.1, 0.1)*fftReal.getAvg(i);
     //points[i][1] = points[i][3] + random (-0.1, 0.1)*fftReal.getAvg(i);
-    text("Frq "+fftReal.getAverageCenterFrequency(i), points[i][0]-5, points[i][1] -15); 
-  //  ellipse(points[i][0], points[i][1], 15, 15);
-    
+    text("Frq "+fftReal.getAverageCenterFrequency(i), Global.points[i][0]-5, Global.points[i][1] -15); 
+  
     int count = 0;
     for(int ii=0; ii<myLinks.length; ii++)
     {
@@ -321,10 +324,10 @@ void draw (){
           stroke ( 100,100, 100 );          
           int endIndex = myLinks[ii][1];
           
-          float startX = points[startIndex][0];
-          float startY = points[startIndex][1];
-          float endX = points[endIndex][0]+5;
-          float endY = points[endIndex][1]+5;
+          float startX = Global.points[startIndex][0];
+          float startY = Global.points[startIndex][1];
+          float endX = Global.points[endIndex][0]+5;
+          float endY = Global.points[endIndex][1]+5;
           //line( startX, startY, endX, endY );
           text("Cnt "+count, startX+ (endX-startX)/2, startY+ (endY-startY)/2); 
            count++;
@@ -362,14 +365,16 @@ void draw (){
   //    translate (Global.fieldSize/2 + Global.gravX, -Global.fieldSize / pow (2, Global.recursion), Global.fieldSize/2 + Global.gravY); 
     // sphere (10); 
    
-    fill ( 0,0, 100 );
+    
   beginShape(TRIANGLES); 
  
   noStroke(); 
-  for (int i = 0; i<vertices.size(); i=i+3){    
-      vertex(points[vertices.get(i)][0], points[vertices.get(i)][1], points[vertices.get(i)][4]/4);    
-      vertex(points[vertices.get(i+1)][0], points[vertices.get(i+1)][1], points[vertices.get(i+1)][4]/4);
-      vertex(points[vertices.get(i+2)][0], points[vertices.get(i+2)][1], points[vertices.get(i+2)][4]/4);
+  fill (0, 0, 100);
+  for (int i = 0; i<Global.vertices.size(); i=i+3){    
+     // fill ( (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/3 ,10, 100 );
+      vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
+      vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
+      vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
   }
   endShape(); 
   popMatrix();
