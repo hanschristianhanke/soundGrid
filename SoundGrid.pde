@@ -41,7 +41,7 @@ void setup(){
   cp5 = new ControlP5(this);
   minim = new Minim(this);
   
-  input = minim.loadFile("data/Timecode.mp3");
+  input = minim.loadFile("data/12 Morning Breaks.mp3");
   
 
   
@@ -406,7 +406,7 @@ void draw (){
   noStroke(); 
   fill (0, 0, 100);
   for (int i = 0; i<Global.vertices.size(); i=i+3){    
-      fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
+     // fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
       vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
       vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
       vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
