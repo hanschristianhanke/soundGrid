@@ -14,4 +14,11 @@ static class Global {
   
   static public float [][] points;
   static public IntList vertices = new IntList();
+  
+  static public List<Particle> particles = new ArrayList<Particle>();
+  static public List<Particle> particlesToAdd = new ArrayList<Particle>(); 
+  
+  static public Delaunay myDelaunay;
+  
+  
 }

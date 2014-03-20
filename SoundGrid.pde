@@ -6,6 +6,7 @@ import controlP5.*;
 import ddf.minim.*;
 import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
+import java.util.Iterator;
 
 int bandbreite = 50;
 int unterteilungen = 6;
@@ -25,7 +26,7 @@ int size = 800;
 int num = 11;
 
 
-Delaunay myDelaunay;
+
 
 float[][] myEdges;
 int[][] myLinks;
@@ -53,7 +54,6 @@ void setup(){
   
   bandbreiteOld = bandbreite;
   unterteilungenOld = unterteilungen;
-  
   //label = cp5.addTextlabel("label").setPosition(x,y +=sliderSpace).setFont(createFont("Arial",20));
 
  
@@ -77,7 +77,7 @@ void setup(){
   
   //blendMode(ADD);  
   //colorMode(HSB);
- // myEdges = myDelaunay.getEdges();
+ // myEdges = Global.myDelaunay.getEdges();
    
    input.play();
    input.loop();
@@ -87,6 +87,8 @@ void setup(){
   
   
 }
+
+
 
 boolean containsValue (int [] array, int value){
    for  (int i = 0; i< array.length; i++){
@@ -183,23 +185,23 @@ void renew(){
 }
 
 void generateVertices(){  
-  myDelaunay = new Delaunay( Global.points );
-  myLinks = myDelaunay.getLinks(); 
+  Global.myDelaunay = new Delaunay( Global.points );
+  myLinks = Global.myDelaunay.getLinks(); 
   Global.vertices = new IntList();
   for(int i=0; i<Global.points.length; i++)
   {
-      int [] links = myDelaunay.getLinked(i);
+      int [] links = Global.myDelaunay.getLinked(i);
       if (links.length == 2){
-          if ( containsValue(myDelaunay.getLinked(links[0]), links[1]) && containsValue(myDelaunay.getLinked(links[1]), links[0])){
+          if ( containsValue(Global.myDelaunay.getLinked(links[0]), links[1]) && containsValue(Global.myDelaunay.getLinked(links[1]), links[0])){
               Global.vertices.append(i);
               Global.vertices.append(links[0]);
               Global.vertices.append(links[1]);
           }
       } else if (links.length > 2){
          for (int a=0; a<links.length; a++){
-            int [] linksA = myDelaunay.getLinked(links[a]);
+            int [] linksA = Global.myDelaunay.getLinked(links[a]);
             for (int b=a+1; b<links.length; b++){              
-              int [] linksB = myDelaunay.getLinked(links[b]); 
+              int [] linksB = Global.myDelaunay.getLinked(links[b]); 
                  if (containsEachOther(links[a], linksA, links[b], linksB)){
                  //if (containsValue(linksA, b) && containsValue(linksB, a)){
                  
@@ -258,28 +260,17 @@ void draw (){
 
   fftReal.forward(input.left);
   
-   
-  
- // max = 100;
-  
-  
-  //stroke (0, 100, 0);
- // noStroke();
- 
-  
- 
   for(int i=1; i<Global.points.length - ((sqSize+2)*4); i++)
   { 
-    int [] links = myDelaunay.getLinked(i);
+    int [] links = Global.myDelaunay.getLinked(i);
     float locX = Global.points[i][0];
-    float locY = Global.points[i][1];
-   
+    float locY = Global.points[i][1];   
     
-   if ( (fftReal.getAvg(i))*5 > Global.points[i][4] && fftReal.getAvg(i) > avg * 0 ){
-   //if ( fftReal.getAvg(i) > avg/2){
-      // points[i][4] += fftReal.getAvg(i)* 1/frameRate*30;
+    if ( (fftReal.getAvg(i))*5 > Global.points[i][4] && fftReal.getAvg(i) > avg * 0 ){
        Global.points[i][4] = (fftReal.getAvg(i))*5;
-       //Global.points[i][4] += (fftReal.getAvg(i))/10;
+       if (fftReal.getAvg(i) > avg*10){
+         generateParticles (i, Global.points[i][4]/5, 0.1);
+       }
     } else {
        Global.points[i][4] = Global.points[i][4] * 0.98;
     }
@@ -292,44 +283,18 @@ void draw (){
     int grvX = 0;
     int grvY = 0;
     float maxDist = 5 * (size / unterteilungenOld);
-    
-    //maxDist = dist (0,0, maxDist, maxDist);
-    
-   // maxDist = 100;
-    
+        
     for (int ii=1; ii < links.length; ii++){
       float [] pnt = Global.points[links[ii]];
-      //float distance = dist(locX, locY, pnt[0], pnt[1]);
-     // float gravity = pow(map (min (distance, maxDist), 0, maxDist, 1, 0),2);
-      //gravity = 1 - (gravity / maxDist);
-      //gravity = gravity*gravity;
-      //println (distance+ "  "+maxDist+"  "+gravity);
-      //float diff = abs( 100 - (100/locGrv)* pnt[4]);
-      
-      
       float factor = 0;
-      //if (locGrv > avg ){    
-          //factor *= lerp( distance, 0, 10)/10;
-          // grvX += (pnt[0] - locX) * (pnt[4]  * locGrv)/100  / gravity;
-          // grvY += (pnt[1] - locY) * (pnt[4]  * locGrv)/100  / gravity;
-         float distance = dist(locX, locY, pnt[0], pnt[1]);
-         float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
-      
-         grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length*3;
-         grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length*3;
-        
-      /*} else {
-         float distance = dist(locX, locY, pnt[0], pnt[1]);
-         float gravity = pow(map (min (distance, maxDist), 0, maxDist, 1, 0),2);
-      
-         grvX += (pnt[0] - points[i][5]) * pnt[4] * 0.25;
-         grvY += (pnt[1] - points[i][6]) * pnt[4] * 0.25;
-         points[i][0] = points[i][5];
-         points[i][1] = points[i][6];
-      }*/
-      
      
-     
+      float distance = dist(locX, locY, pnt[0], pnt[1]);
+      float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
+      
+      grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length*3;
+      grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length*3;       
+ 
+          
     }
     
     float distance = dist(locX, locY, Global.points[i][5], Global.points[i][6]);
@@ -349,58 +314,8 @@ void draw (){
     //points[i][0] = points[i][2] + random (-0.1, 0.1)*fftReal.getAvg(i);
     //points[i][1] = points[i][3] + random (-0.1, 0.1)*fftReal.getAvg(i);
     text("Frq "+fftReal.getAverageCenterFrequency(i), Global.points[i][0]-5, Global.points[i][1] -15); 
-  /*
-    int count = 0;
-    for(int ii=0; ii<myLinks.length; ii++)
-    {
-      int startIndex = myLinks[ii][0];
-      
-      if (startIndex == i){
-          stroke ( 100,100, 100 );          
-          int endIndex = myLinks[ii][1];
-          
-          float startX = Global.points[startIndex][0];
-          float startY = Global.points[startIndex][1];
-          float endX = Global.points[endIndex][0]+5;
-          float endY = Global.points[endIndex][1]+5;
-          //line( startX, startY, endX, endY );
-          text("Cnt "+count, startX+ (endX-startX)/2, startY+ (endY-startY)/2); 
-           count++;
-      }
-    }*/
   }
  
-   
-  //Lines per Links
-   /*
-  for(int i=0; i<myLinks.length; i++)
-  {
-    int startIndex = myLinks[i][0];
-    stroke ( 100,100, 100 );
-    int endIndex = myLinks[i][1];
-    
-   // points[startIndex][0] = random (-0.5,0.5);
-   // points[startIndex][1] += random (-0.5,0.5);
-   
-    float startX = points[startIndex][0];
-    float startY = points[startIndex][1];
-    float endX = points[endIndex][0]+5;
-    float endY = points[endIndex][1]+5;
-    beginShape(TRIANGLES);
-    line( startX, startY, endX, endY );
-    endShape(CLOSE);
-  }
-  */
-  
- 
-
-   // stroke (255,0,0);
-  // line (0, 0, 1, 10, 0, 1);
-     
-  //    translate (Global.fieldSize/2 + Global.gravX, -Global.fieldSize / pow (2, Global.recursion), Global.fieldSize/2 + Global.gravY); 
-    // sphere (10); 
-   
-    
   beginShape(TRIANGLES); 
  
   noStroke(); 
@@ -412,12 +327,34 @@ void draw (){
       vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
   }
   endShape(); 
-  popMatrix();
- 
   
-}
-
-void pyramidSquare (float beginX, float beginY, float endX, float endY, int recursion){
+  /*
+  List <Particle> particlesToDelete = new ArrayList<Particle>();
+  for (Particle particle : Global.particles){
+    if (particle.update()!){
+        particlesToDelete.add(particle);
+    }
+  }*/
+  
+ 
+  for (Iterator<Particle> particleIter = Global.particles.iterator(); particleIter.hasNext();){ 
+      Particle particle = particleIter.next(); 
+      if(!particle.update()){ 
+        particleIter.remove(); 
+        //System.out.println("Paul wurde während der Iteration aus der Liste gelöscht!"); 
+      } else {
+        particle.draw();
+      }
+   } 
+   
+   for (Iterator<Particle> particleIter = Global.particlesToAdd.iterator(); particleIter.hasNext();){ 
+      Particle thisParticle = particleIter.next(); 
+      Global.particles.add (thisParticle);
+      particleIter.remove(); 
+   } 
+  
+  //println ("len "+Global.particles.size());
+  popMatrix();
  
 }
 
@@ -438,4 +375,13 @@ void keyPressed() {
   if (key == ' '){
     background (0);
   }
+}
+
+public void generateParticles(int startNode, float intensity, float speed){
+    int [] links = Global.myDelaunay.getLinked(startNode);
+    for (int ii=1; ii < links.length; ii++){
+      if (links[ii] != 0){
+        Global.particles.add( new Particle ( startNode, links[ii], intensity, speed, -1));
+      }      
+    }
 }
