@@ -8,7 +8,10 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 import java.util.Iterator;
 
+String [] songs = new String[]{ "12 Morning Breaks", "CraveYou", "moonbootica", "Super Flu & Andhim - Reeves (Original mix)(720p_H.264-AAC)"};
+int actualSong = 0;
 
+boolean lock = false;
 
 int bandbreite = 50;
 int unterteilungen = 6;
@@ -46,7 +49,7 @@ void setup(){
   cp5 = new ControlP5(this);
   minim = new Minim(this);
   
-  input = minim.loadFile("data/CraveYou.mp3");
+  input = minim.loadFile("data/044. Ray Charles - Georgia On My Mind (1960).mp3");
   
 
   
@@ -122,7 +125,7 @@ void renew(){
   fftReal.logAverages(bandbreite, unterteilungenOld);
   background (0);   
   sqSize = floor(sqrt(fftReal.avgSize())* 0.8);
-  Global.points = new float[(sqSize*sqSize)+ (sqSize+2)*4][7];
+  Global.points = new float[(sqSize*sqSize) + (sqSize+2)*4][7];
   /*
   0,1  act. Postion X/Y
   2,3  dir. Vector
@@ -221,7 +224,7 @@ void generateVertices(){
 }
 
 void draw (){  
-  
+  if (!lock){
   float avg = 0;   
   for(int i=0; i<Global.points.length; i++)
   {    
@@ -255,15 +258,16 @@ void draw (){
   //fill(0,20);
   //blendMode(ADD);  
  
- // translate (Global.fieldSize/2, Global.fieldSize/2, 0); 
-  //pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
+ // translate (Global.fieldSize/2, Global.fieldSize/2, 0)
   
-  
-  directionalLight(0,10,40, 1,0,0);
-  directionalLight(20,10,40, -1,0,0);
-  directionalLight(40,10,40, 0,1,0);
-  directionalLight(80,10,40, 0,-1,0);
-  
+  if (Global.bright){
+    pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
+  } else {
+    directionalLight(0,10,40, 1,0,0);
+    directionalLight(0,10,40, -1,0,0);
+    directionalLight(0,10,40, 0,1,0);
+    directionalLight(0,10,40, 0,-1,0);
+  }
   
   //ambientLight(72, 72, 102);
 
@@ -281,9 +285,12 @@ void draw (){
     
     if ( (fftReal.getAvg(i))*5 > Global.points[i][4] && fftReal.getAvg(i) > avg * 0 ){
        Global.points[i][4] = (fftReal.getAvg(i))*5;
-       if (fftReal.getAvg(i) > avg*random (5,10)){
-         generateParticles (i, Global.points[i][4]/5, 0.01, (i / sqlen)  * 100);
-       }
+       //if (fftReal.getAvg(i) > avg*random (10,15)){
+         //println (fftReal.getAvg(i) / avg);
+         if (frameCount % 5 ==0){
+         generateParticles (i, fftReal.getAvg(i), /*0.01*/ fftReal.getAvg(i)/5000  , (i / sqlen));
+         }
+       //}
     } else {
        Global.points[i][4] = Global.points[i][4] * 0.98;
     }
@@ -304,8 +311,8 @@ void draw (){
       float distance = dist(locX, locY, pnt[0], pnt[1]);
       float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
       
-      grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length*3;
-      grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length*3;       
+      grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length * Global.relation; //*3.5;
+      grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length * Global.relation; //*3.5;       
  
           
     }
@@ -313,8 +320,8 @@ void draw (){
     float distance = dist(locX, locY, Global.points[i][5], Global.points[i][6]);
     float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
     //println (grvX);
-    grvX += -(Global.points[i][0] - Global.points[i][5])*avg*25;
-    grvY += -(Global.points[i][1] - Global.points[i][6])*avg*25;  
+    grvX += -(Global.points[i][0] - Global.points[i][5])*avg * (28.5-Global.relation); //; //*25;
+    grvY += -(Global.points[i][1] - Global.points[i][6])*avg * (28.5-Global.relation); //*25;  
       
     Global.points[i][2] = grvX * 1/frameRate*0.01;
     Global.points[i][3] = grvY * 1/frameRate*0.01;
@@ -334,6 +341,7 @@ void draw (){
       vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
   }  
   endShape(); 
+  
   
  /*beginShape(); 
  
@@ -377,8 +385,10 @@ void draw (){
       particleIter.remove(); 
    } 
  // image (Global.topLayer, 0,0, 500);
+ //println (Global.particles.size());
+ 
   popMatrix();
-  
+  }
 }
 
 int getPoisson(double lambda) {
@@ -394,10 +404,46 @@ int getPoisson(double lambda) {
   return k - 1;
 }
 
-void keyPressed() {
-  if (key == ' '){
-    background (0);
+void keyPressed() { 
+  if (key == 'q'){         // dell
+    Global.bright = true;
+  } 
+ 
+  if (key == 'w'){  // dunkel
+    Global.bright = false;
   }
+  
+   if (key == '1'){  // mode 0
+    lock = true;
+    mode = 0;
+    renew();
+    lock = false;
+  }
+  
+   if (key == '2'){  // mode 1
+    lock = true;
+    mode = 1;
+    renew();
+    lock = false;
+  }
+  
+  if (key == ',' && Global.relation > 0){  // mode 0
+      Global.relation -= 0.1;
+  }
+  
+  if (key == '.' && Global.relation < 28.5){  // mode 1
+    Global.relation += 0.1;
+  }
+  
+  if (key == 'm'){
+    input.pause();
+    actualSong++;
+    actualSong = actualSong%songs.length;
+    println ("sn "+actualSong);
+    input = minim.loadFile(songs[actualSong]+".mp3");
+    input.play();
+  }
+  
 }
 
 public void generateParticles(int startNode, float intensity, float speed, float col){

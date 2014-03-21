@@ -30,7 +30,7 @@ class Particle {
   public boolean update(){
     //intensity -= 1/frameRate;
     speed *= 0.999;
-    intensity *= 0.99;
+    intensity *= 0.97;
     position += speed;
    // dx = x;
    // dy = y;
@@ -46,14 +46,22 @@ class Particle {
       generateSubParticles (endNode, intensity, speed, ignoreNode, col);
     }
      
-    return intensity > 0.001 && position <1;
+    return intensity > 0.2 && position <1;
   }
   
   public void draw(){
     
-    strokeWeight (intensity/10);
-    stroke(col,100,100, intensity/2);
-        
+   // strokeWeight (intensity);
+   float newCol;
+    if (Global.bright){
+       newCol = map (col, 0,1, 60,100); 
+    } else {
+      newCol = map (col, 0,1, 0,60);
+    }
+   
+    stroke(newCol,100, 100, max(50, intensity*10));
+    strokeWeight ( max (2,intensity/10));
+   // stroke(col,100,100);    
     point (x,y, 600);
    // println ("-- "+x+" "+y+" "+z);
   }
@@ -64,7 +72,7 @@ class Particle {
     
     for (int ii=1; ii < links.length; ii++){
       if (ii != ignoreNode && links[ii] != 0){
-        Global.particlesToAdd.add( new Particle ( startNode, links[ii], intensity / (links.length), speed / (links.length), -1, col));    
+        Global.particlesToAdd.add( new Particle ( startNode, links[ii], intensity/4 , speed , -1, col));    
       }  
    }
 }
