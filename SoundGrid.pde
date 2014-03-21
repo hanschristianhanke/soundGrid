@@ -260,14 +260,16 @@ void draw (){
  
  // translate (Global.fieldSize/2, Global.fieldSize/2, 0)
   
-  if (Global.bright){
+  if (Global.mode == 1){
     pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
-  } else {
-    directionalLight(0,10,40, 1,0,0);
-    directionalLight(0,10,40, -1,0,0);
-    directionalLight(0,10,40, 0,1,0);
-    directionalLight(0,10,40, 0,-1,0);
-  }
+  } if (Global.mode == 2){ 
+    directionalLight(0,10,40, 1,0,-0.1);
+    directionalLight(0,10,40, -1,0,-0.1);
+    directionalLight(0,10,40, 0,1,-0.1);
+    directionalLight(0,10,40, 0,-1,-0.1);
+  } if (Global.mode == 3){ 
+    pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, -Global.fieldSize);  
+  } 
   
   //ambientLight(72, 72, 102);
 
@@ -323,25 +325,32 @@ void draw (){
     grvX += -(Global.points[i][0] - Global.points[i][5])*avg * (28.5-Global.relation); //; //*25;
     grvY += -(Global.points[i][1] - Global.points[i][6])*avg * (28.5-Global.relation); //*25;  
       
-    Global.points[i][2] = grvX * 1/frameRate*0.01;
-    Global.points[i][3] = grvY * 1/frameRate*0.01;
+    Global.points[i][2] = grvX * 1/frameRate*Global.speed; //0.01;
+    Global.points[i][3] = grvY * 1/frameRate*Global.speed; //0.01;
     
     Global.points[i][0] += Global.points[i][2];
     Global.points[i][1] += Global.points[i][3];
   }
  
-  beginShape(TRIANGLES); 
- 
-  noStroke(); 
-  fill (0, 0, 100);
-  for (int i = 0; i<Global.vertices.size(); i=i+3){    
-     // fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
-      vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
-      vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
-      vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
-  }  
-  endShape(); 
-  
+  if (Global.mode != 3){
+    beginShape(TRIANGLES); 
+    noStroke(); 
+    fill (0, 0, 100);
+    for (int i = 0; i<Global.vertices.size(); i=i+3){    
+       // fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
+        vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
+        vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
+        vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
+    }  
+    endShape(); 
+  } else {
+    stroke (0, 100,100);
+    /*for (int i =0; i< Global.point.length; i++){
+      int [] links = Global.myDelaunay.getLinked(i);
+      for (int ii=0; ii<links.length; ii++){
+      }
+    }*/
+  }
   
  /*beginShape(); 
  
@@ -406,11 +415,15 @@ int getPoisson(double lambda) {
 
 void keyPressed() { 
   if (key == 'q'){         // dell
-    Global.bright = true;
+    Global.mode = 1;
   } 
  
   if (key == 'w'){  // dunkel
-    Global.bright = false;
+    Global.mode = 2;
+  }
+  
+  if (key == 'e'){  // dunkel
+    Global.mode = 3;
   }
   
    if (key == '1'){  // mode 0
@@ -433,6 +446,14 @@ void keyPressed() {
   
   if (key == '.' && Global.relation < 28.5){  // mode 1
     Global.relation += 0.1;
+  }
+  
+  if (key == 'o' && Global.speed > 0){  // mode 0
+      Global.relation -= 0.001;
+  }
+  
+  if (key == 'p' && Global.speed < 1){  // mode 1
+    Global.relation += 0.001;
   }
   
   if (key == 'm'){

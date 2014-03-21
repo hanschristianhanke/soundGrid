@@ -53,8 +53,8 @@ class Particle {
     
    // strokeWeight (intensity);
    float newCol;
-    if (Global.bright){
-       newCol = map (col, 0,1, 60,100); 
+    if (Global.mode == 1){
+      newCol = map (col, 0,1, 60,100); 
     } else {
       newCol = map (col, 0,1, 0,60);
     }

@@ -21,9 +21,10 @@ static class Global {
   
   static public Delaunay myDelaunay;
   
-  static public boolean bright = true;
+  static public int mode = 1;
   
   static public float relation = 3.5;
+  static public float speed = 0.01;
   
   
 }
