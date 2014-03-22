@@ -14,7 +14,7 @@ int actualSong = 0;
 boolean lock = false;
 
 int bandbreite = 50;
-int unterteilungen = 16;
+int unterteilungen = 8;
 
 int bandbreiteOld;
 int unterteilungenOld;
@@ -77,29 +77,6 @@ void setup(){
   bandbreiteOld = bandbreite;
   unterteilungenOld = unterteilungen;
   //label = cp5.addTextlabel("label").setPosition(x,y +=sliderSpace).setFont(createFont("Arial",20));
-
- 
-/*  
-  points[0][0] = 0;
-  points[0][1] = 0;
-  
-  points[1][0] = size;
-  points[1][1] = 0;
-  
-  points[2][0] = 0;
-  points[2][1] = size;
-  
-  points[3][0] = size;
-  points[3][1] = size;
-  */
- // Global.fieldSize = size;
-  
-  
- // smooth();
-  
-  //blendMode(ADD);  
-  //colorMode(HSB);
- // myEdges = Global.myDelaunay.getEdges();
    
    input.play();
    input.loop();
@@ -156,19 +133,11 @@ void renew(){
       for (int ii = 0; ii<sqSize; ii++){
         Global.points[i*sqSize+ii][0] = (sizeX/sqSize) * (i+0.5) + random (-5, 5);
         Global.points[i*sqSize+ii][1] = (sizeY/sqSize) * (ii+0.5) + random (-5, 5);
-       // println (Global.points[i*sqSize+ii][0]+ " // "+Global.points[i*sqSize+ii][1]);
         
         Global.points[i*sqSize+ii][5] = Global.points[i*sqSize+ii][0];
         Global.points[i*sqSize+ii][6] = Global.points[i*sqSize+ii][1];
       }
     }
-    /*
-    for (int i = 0; i<sqSize*sqSize; i++){   
-      Global.points[i][0] = ((i % sqSize)+1)* (sizeX/(sqSize+1)) + random (-5, 5);
-      Global.points[i][1] = floor ((i/sqSize)+1)* (sizeY/(sqSize+1)) + random (-5, 5);
-      Global.points[i][5] = Global.points[i][0];
-      Global.points[i][6] = Global.points[i][1];
-    }*/
   }
  
  //Random
@@ -180,6 +149,7 @@ void renew(){
       Global.points[i][6] = Global.points[i][1];
     }
   }
+  
   
   int arrsize = sqSize*sqSize;
   float step = sizeX / (sqSize);
@@ -196,19 +166,7 @@ void renew(){
     Global.points[arrsize+i*4+3][0] = sizeX;
     Global.points[arrsize+i*4+3][1] = step * i; 
   }
-  
-  
-  
-  //SPIRALE
-  /*
-  for (int i = 0; i<sqSize*sqSize; i++){   
-    Global.points[i][0] = cos(i)*i*5 + size/2 + random (-25, 25);;
-    Global.points[i][1] = sin(i)*i*5 + size/2 + random (-25, 25);;
-        
-    Global.points[i][5] = Global.points[i][0];
-    Global.points[i][6] = Global.points[i][1];
-  }*/
- 
+   
   fftReal.window(FFT.HAMMING);
   
   //vertices
@@ -237,9 +195,6 @@ void generateVertices(){
             for (int b=a+1; b<links.length; b++){              
               int [] linksB = Global.myDelaunay.getLinked(links[b]); 
                  if (containsEachOther(links[a], linksA, links[b], linksB)){
-                 //if (containsValue(linksA, b) && containsValue(linksB, a)){
-                 
-                   //println ("node "+i+" "+links[a]+"  "+links[b]);
                    Global.vertices.append(i);
                    Global.vertices.append(links[a]);
                    Global.vertices.append(links[b]);
@@ -254,9 +209,6 @@ void draw (){
   if (!lock){
     
   float avg = 0;   
-  
- 
-  //float minElementOld = minElement;
   maxElement = 0;
   max = 0;
   for(int i=0; i<Global.points.length; i++)
@@ -287,13 +239,9 @@ void draw (){
      targetColor = map (newMaxElement, Global.points.length*0, Global.points.length*1, 0, 100); 
      maxElements = new float[Global.points.length];
   } else {
-     colorOverTime = map (frameCount % 100, 0,49, targetColorOld, targetColor);
+     colorOverTime = map (frameCount % 100, 0,99, targetColorOld, targetColor);
   }
   
-  
-  
-  //println (avg);
-  //unterteilungen = floor( constrain( avg, 6, 32));
   if (bandbreiteOld != bandbreite ||  unterteilungenOld != unterteilungen){
     bandbreiteOld = bandbreite;
     unterteilungenOld = unterteilungen;
@@ -307,19 +255,9 @@ void draw (){
   int secs = floor(t);
   if (secs != secondsRun){  
     secondsRun = secs;
-    //generateVertices();
   }
   
   pushMatrix();
-  //fill(0,5);
-  //blendMode(BLEND);  
-  //rect(0, 0, width, height);
-  //fill(0,20);
-  //blendMode(ADD);  
- 
- // translate (Global.fieldSize/2, Global.fieldSize/2, 0)
-  //colorOverTime += map (minElement, 0, Global.points.length, -1, 1);
-  //  float col = map (colorOverTime, 0, 100, 0, 100);
     
   if (Global.mode == 1){
     pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
@@ -341,20 +279,13 @@ void draw (){
     pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, -Global.fieldSize);  
   } 
   
-  //ambientLight(72, 72, 102);
-
-
-
-  fftReal.forward(input.left);
-  
-  
+  fftReal.forward(input.left);  
   
   for(int i=1; i<sqlen; i++)
   { 
     int [] links = Global.myDelaunay.getLinked(i);
     float locX = Global.points[i][0];
-    float locY = Global.points[i][1];   
-        
+    float locY = Global.points[i][1];          
         if (frameCount % 5 == 0){
            float delta = avgIntensity[i] - avgIntensityOld[i];
            delta = min (500, delta);
@@ -366,16 +297,10 @@ void draw (){
             avgIntensity[i] = avgIntensityOld[i]; 
             avgIntensity[i] = 0;
          }
-   
     
     if ( (fftReal.getAvg(i))*5 > Global.points[i][4] && fftReal.getAvg(i) > avg * 0 ){
        Global.points[i][4] = (fftReal.getAvg(i))*5;
-       //if (fftReal.getAvg(i) > avg*random (10,15)){
-         //println (fftReal.getAvg(i) / avg);
-         avgIntensity[i] += (fftReal.getAvg(i));
-         
-         
-       //}
+       avgIntensity[i] += (fftReal.getAvg(i));
     } else {
        Global.points[i][4] = Global.points[i][4] * 0.98;
     }
@@ -398,13 +323,11 @@ void draw (){
       
       grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length * Global.relation; //*3.5;
       grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length * Global.relation; //*3.5;       
- 
-          
     }
     
     float distance = dist(locX, locY, Global.points[i][5], Global.points[i][6]);
     float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
-    //println (grvX);
+    
     grvX += -(Global.points[i][0] - Global.points[i][5])*avg * (28.5-Global.relation); //; //*25;
     grvY += -(Global.points[i][1] - Global.points[i][6])*avg * (28.5-Global.relation); //*25;  
       
@@ -420,11 +343,7 @@ void draw (){
     noStroke(); 
     fill (0, 0, 100);
     
-   
-    
     for (int i = 0; i<Global.vertices.size(); i=i+3){    
-       // fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
-        
         vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
         vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
         vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
@@ -450,32 +369,6 @@ void draw (){
     }
   }
   
- /*beginShape(); 
- 
-     // fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
-     texture (Global.topLayer);
-     vertex(0, 0, 600, 0,   0);
-     vertex( size, 0, 600, size, 0);
-     vertex( size,  size, 600, size, size);
-     vertex(0,  size, 600, 0,   size);
-     
-  endShape(); 
-  */
-  /*
-  List <Particle> particlesToDelete = new ArrayList<Particle>();
-  for (Particle particle : Global.particles){
-    if (particle.update()!){
-        particlesToDelete.add(particle);
-    }
-  }*/
-  
-//Global.topLayer.beginDraw();
-//Global.topLayer.fill(1,5);
-//Global.topLayer.blendMode(BLEND);  
-//Global.topLayer.rect(0, 0, size, size);
-//Global.topLayer.fill(0,20);
-//Global.topLayer.blendMode(ADD); 
-
   if (Global.lineMode == 1){
   } else if (Global.lineMode == 2) {
     beginShape(LINES);
@@ -485,7 +378,6 @@ void draw (){
       Particle particle = particleIter.next(); 
       if(!particle.update()){ 
         particleIter.remove(); 
-        //System.out.println("Paul wurde während der Iteration aus der Liste gelöscht!"); 
       } else {
         particle.draw();
       }
@@ -495,17 +387,12 @@ void draw (){
     endShape();
   }
    
-//Global.topLayer.endDraw();
    for (Iterator<Particle> particleIter = Global.particlesToAdd.iterator(); particleIter.hasNext();){ 
       Particle thisParticle = particleIter.next(); 
       Global.particles.add (thisParticle);
       particleIter.remove(); 
    } 
- // image (Global.topLayer, 0,0, 500);
- //println (Global.particles.size());
- 
-  popMatrix();
-  
+  popMatrix();  
   }
 }
 
