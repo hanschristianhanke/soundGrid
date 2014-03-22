@@ -119,7 +119,7 @@ void renew(){
   fftReal = new FFT( input.bufferSize(), input.sampleRate () );
   fftReal.logAverages(bandbreiteOld, unterteilungenOld);
   background (0);   
-  sqSize = floor(sqrt(fftReal.avgSize()) * 0.9);
+  sqSize = floor(sqrt(fftReal.avgSize()) * 0.8);
   Global.points = new float[(sqSize*sqSize) + (sqSize+2)*4][7];
   Global.particles = new ArrayList<Particle>();
   Global.particlesToAdd = new ArrayList<Particle>(); 
@@ -298,7 +298,7 @@ void draw (){
     int [] links = Global.myDelaunay.getLinked(i);
     float locX = Global.points[i][0];
     float locY = Global.points[i][1];          
-        if (frameCount % 15 == 0){
+        if (frameCount % 2 == 0){
           //println ("fps "+frameRate);
            float delta = avgIntensity[i] - avgIntensityOld[i];
            delta = min (500, delta);
@@ -326,6 +326,8 @@ void draw (){
     int grvX = 0;
     int grvY = 0;
     float maxDist = 5 * (sizeX / unterteilungenOld);
+    
+    float sizeCompensation = 1; //ceil (unterteilungenOld / 16);
         
     for (int ii=1; ii < links.length; ii++){
       float [] pnt = Global.points[links[ii]];
@@ -334,15 +336,15 @@ void draw (){
       float distance = dist(locX, locY, pnt[0], pnt[1]);
       float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
       
-      grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length * Global.relation; //*3.5;
-      grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length * Global.relation; //*3.5;       
+      grvX += ((pnt[0] - locX) * pnt[4]  * gravity)/links.length * Global.relation * sizeCompensation; //*3.5;
+      grvY += ((pnt[1] - locY) * pnt[4]  * gravity)/links.length * Global.relation * sizeCompensation; //*3.5;       
     }
     
     float distance = dist(locX, locY, Global.points[i][5], Global.points[i][6]);
     float gravity = pow(map (constrain (distance, 0, maxDist), 0, maxDist, 1, 0),2);
     
-    grvX += -(Global.points[i][0] - Global.points[i][5])*avg * (28.5-Global.relation); //; //*25;
-    grvY += -(Global.points[i][1] - Global.points[i][6])*avg * (28.5-Global.relation); //*25;  
+    grvX += -(Global.points[i][0] - Global.points[i][5])*avg * (28.5-Global.relation) *sizeCompensation; //; //*25;
+    grvY += -(Global.points[i][1] - Global.points[i][6])*avg * (28.5-Global.relation) *sizeCompensation; //*25;  
       
     Global.points[i][2] = grvX * 1/frameRate*Global.speed; //0.01;
     Global.points[i][3] = grvY * 1/frameRate*Global.speed; //0.01;

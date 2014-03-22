@@ -33,7 +33,7 @@ class Particle {
       //intensity -= 1/frameRate;
       float fps = 1/frameRate;
       //speed *= 0.999;
-      speed -= fps/25;
+      speed -= fps/50;
       intensity -= fps*10;
       //intensity *= 0.98*30*fps;
       position += speed;      
