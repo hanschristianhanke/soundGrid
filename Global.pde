@@ -1,6 +1,5 @@
 static class Global {  
   static public PGraphics topLayer;
-  static public List<Pyramid> pyramidList;
   static public int heightLevel = 0;
   static public int recursion = 0;
   static public int fieldSize = 2000;

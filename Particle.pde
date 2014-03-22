@@ -20,7 +20,7 @@ class Particle {
   Particle (int startNode, int endNode, float intensity, float speed, int ignoreNode, float col){
     this.startNode = startNode;
     this.endNode = endNode;
-    this.intensity = intensity;
+    this.intensity = min ( 40, intensity)+random(-4,4);
     this.speed = speed;
     this.ignoreNode = ignoreNode;
     this.rnd = random(0.5, 1.5);
@@ -31,8 +31,11 @@ class Particle {
     
     if (Global.lineMode == 1){
       //intensity -= 1/frameRate;
-      speed *= 0.999;
-      intensity *= 0.97;
+      float fps = 1/frameRate;
+      //speed *= 0.999;
+      speed -= fps/25;
+      intensity -= fps*10;
+      //intensity *= 0.98*30*fps;
       position += speed;      
       x = map (position, 0, 1, Global.points[startNode][0], Global.points[endNode][0]);
       y = map (position, 0, 1, Global.points[startNode][1], Global.points[endNode][1]);

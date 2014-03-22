@@ -12,6 +12,7 @@ String [] songs = new String[]{ "12 Morning Breaks", "CraveYou", "moonbootica", 
 int actualSong = 0;
 
 boolean lock = false;
+boolean done = false;
 
 int bandbreite = 50;
 int unterteilungen = 8;
@@ -55,24 +56,27 @@ int maxElement;
 float [] maxElements;
 
 boolean sketchFullScreen() {
-  return true;
+  return false;
 }
 
 void setup(){
-  Global.topLayer = createGraphics(displayWidth,displayHeight);
-  sizeX = displayWidth;
-  sizeY = displayHeight;
-  size (sizeX, sizeY, OPENGL);
+  //Global.topLayer = createGraphics(displayWidth,displayHeight);
+  sizeX = 1280;//displayWidth;
+  sizeY = 800;//displayHeight;
+  size (sizeX, sizeY, P3D);
   cp5 = new ControlP5(this);
   minim = new Minim(this);
-  
+  if (frame != null) {
+    frame.setResizable(true);
+  }
   input = minim.loadFile("data/test.mp3");
     
   float x = 20;
   float y = 20;
   float sliderSpace = 20;
-  //cp5.addSlider("bandbreite").setPosition(x,y +=sliderSpace).setRange(10,5000);
-  //cp5.addSlider("unterteilungen").setPosition(x,y +=sliderSpace).setRange(1,75);
+  cp5.setAutoDraw(false);
+  cp5.addSlider("bandbreite").setPosition(x,y +=sliderSpace).setRange(10,5000);
+  cp5.addSlider("unterteilungen").setPosition(x,y +=sliderSpace).setRange(1,75);
   
   bandbreiteOld = bandbreite;
   unterteilungenOld = unterteilungen;
@@ -80,9 +84,9 @@ void setup(){
    
    input.play();
    input.loop();
-  fftReal = new FFT( input.bufferSize(), input.sampleRate () );
-  renew ();
-  ortho();  
+  
+   renew ();
+   ortho();  
 }
 
 
@@ -112,14 +116,17 @@ boolean containsEachOther (int a, int [] arrayA, int b, int [] arrayB){
 }
 
 void renew(){
-  fftReal.logAverages(bandbreite, unterteilungenOld);
+  fftReal = new FFT( input.bufferSize(), input.sampleRate () );
+  fftReal.logAverages(bandbreiteOld, unterteilungenOld);
   background (0);   
-  sqSize = floor(sqrt(fftReal.avgSize())* 0.8);
-  
+  sqSize = floor(sqrt(fftReal.avgSize()) * 0.9);
   Global.points = new float[(sqSize*sqSize) + (sqSize+2)*4][7];
+  Global.particles = new ArrayList<Particle>();
+  Global.particlesToAdd = new ArrayList<Particle>(); 
   sqlen = Global.points.length - ((sqSize+2)*4);
   avgIntensity = new float[(int)sqlen];
   avgIntensityOld = new float[(int)sqlen];
+ 
   /*
   0,1  act. Postion X/Y
   2,3  dir. Vector
@@ -128,6 +135,7 @@ void renew(){
   */
   
   //Grid 
+   
   if (mode == 0){
     for (int i = 0; i<sqSize; i++){
       for (int ii = 0; ii<sqSize; ii++){
@@ -139,7 +147,7 @@ void renew(){
       }
     }
   }
- 
+  
  //Random
   if (mode == 1){
     for (int i = 0; i<sqSize*sqSize; i++){   
@@ -149,7 +157,6 @@ void renew(){
       Global.points[i][6] = Global.points[i][1];
     }
   }
-  
   
   int arrsize = sqSize*sqSize;
   float step = sizeX / (sqSize);
@@ -176,7 +183,6 @@ void renew(){
 void generateVertices(){  
   Global.myDelaunay = new Delaunay( Global.points );
   myLinks = Global.myDelaunay.getLinks(); 
-  
   Global.vertices = new IntList();
   Global.links = Global.myDelaunay.getLinks();
   maxElements = new float [Global.points.length];
@@ -202,16 +208,25 @@ void generateVertices(){
                }
             }
          }
-     }
+  }
 }
 
 void draw (){  
+  if (bandbreiteOld != bandbreite ||  unterteilungenOld != unterteilungen){
+    lock = true;
+    bandbreiteOld = bandbreite;
+    unterteilungenOld = unterteilungen;
+    renew();
+    lock = false;
+  }
+  
   if (!lock){
     
   float avg = 0;   
   maxElement = 0;
   max = 0;
-  for(int i=0; i<Global.points.length; i++)
+  
+  for(int i=0; i<fftReal.avgSize(); i++)
   {  
       float val = fftReal.getAvg(i);
      avg += val;
@@ -220,6 +235,7 @@ void draw (){
         maxElement = i; 
      }     
   }
+  
   avg = avg / Global.points.length;
   maxElements[maxElement]++;
   
@@ -242,11 +258,7 @@ void draw (){
      colorOverTime = map (frameCount % 100, 0,99, targetColorOld, targetColor);
   }
   
-  if (bandbreiteOld != bandbreite ||  unterteilungenOld != unterteilungen){
-    bandbreiteOld = bandbreite;
-    unterteilungenOld = unterteilungen;
-    renew(); 
-  }
+  
   
   colorMode(HSB, 100);
   background (0);   
@@ -258,7 +270,7 @@ void draw (){
   }
   
   pushMatrix();
-    
+  
   if (Global.mode == 1){
     pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
     
@@ -286,7 +298,8 @@ void draw (){
     int [] links = Global.myDelaunay.getLinked(i);
     float locX = Global.points[i][0];
     float locY = Global.points[i][1];          
-        if (frameCount % 5 == 0){
+        if (frameCount % 15 == 0){
+          //println ("fps "+frameRate);
            float delta = avgIntensity[i] - avgIntensityOld[i];
            delta = min (500, delta);
            if (Global.lineMode == 1 && delta > 20){
@@ -337,17 +350,43 @@ void draw (){
     Global.points[i][0] += Global.points[i][2];
     Global.points[i][1] += Global.points[i][3];
   }
- 
+    
   if (Global.mode != 3){
-    beginShape(TRIANGLES); 
+    
     noStroke(); 
     fill (0, 0, 100);
+    beginShape(TRIANGLES); 
+    /* 
+    for (int i = 0; i<Global.vertices.size(); i=i+3){  
+        float [] p1 = Global.points[Global.vertices.get(i)];
+        float [] p2 = Global.points[Global.vertices.get(i+1)];
+        float [] p3 = Global.points[Global.vertices.get(i+2)];  
+        vertex(p1[0], p1[1], -1000 +  p1[4]/4);    
+        vertex(p2[0], p2[1], -1000 +  p2[4]/4);
+        vertex(p3[0], p3[1], -1000 +  p3[4]/4);
+        //triangle(p1[0], p1[1], p1[4] /4, p2[0], p2[1], p2[4] /4, p3[0], p3[1], p3[4] /4  );
+        //triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]  );
+    }  */
     
-    for (int i = 0; i<Global.vertices.size(); i=i+3){    
-        vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
-        vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
-        vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
+    int count = 0;
+    float [][] tempPoints = new float [3][];
+    for (Iterator<Integer> vertexIter = Global.vertices.iterator(); vertexIter.hasNext();){ 
+      //tempPoints[count%3] = particleIter.next();
+      float [] thisPoint = Global.points[vertexIter.next()];
+      vertex(thisPoint[0],thisPoint[1], -1000 +  thisPoint[4]/4);   
+   } 
+   /*
+    for (int i = 0; i<Global.vertices.size(); i=i+3){  
+        float [] p1 = Global.points[Global.vertices.get(i)];
+        float [] p2 = Global.points[Global.vertices.get(i+1)];
+        float [] p3 = Global.points[Global.vertices.get(i+2)];  
+        vertex(p1[0], p1[1], -1000 +  p1[4]/4);    
+        vertex(p2[0], p2[1], -1000 +  p2[4]/4);
+        vertex(p3[0], p3[1], -1000 +  p3[4]/4);
+        //triangle(p1[0], p1[1], p1[4] /4, p2[0], p2[1], p2[4] /4, p3[0], p3[1], p3[4] /4  );
+        //triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]  );
     }  
+    */
     endShape(); 
   }
   
@@ -369,11 +408,13 @@ void draw (){
     }
   }
   
+
+  
   if (Global.lineMode == 1){
   } else if (Global.lineMode == 2) {
     beginShape(LINES);
   }
-
+  
   for (Iterator<Particle> particleIter = Global.particles.iterator(); particleIter.hasNext();){ 
       Particle particle = particleIter.next(); 
       if(!particle.update()){ 
@@ -382,18 +423,21 @@ void draw (){
         particle.draw();
       }
    } 
+   
    if (Global.lineMode == 1){
   } else if (Global.lineMode == 2) {
     endShape();
   }
-   
+  
    for (Iterator<Particle> particleIter = Global.particlesToAdd.iterator(); particleIter.hasNext();){ 
       Particle thisParticle = particleIter.next(); 
       Global.particles.add (thisParticle);
       particleIter.remove(); 
    } 
+   
   popMatrix();  
   }
+  cp5.draw();
 }
 
 int getPoisson(double lambda) {
