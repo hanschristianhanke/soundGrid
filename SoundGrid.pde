@@ -14,11 +14,13 @@ int actualSong = 0;
 boolean lock = false;
 
 int bandbreite = 50;
-int unterteilungen = 6;
+int unterteilungen = 16;
 
 int bandbreiteOld;
 int unterteilungenOld;
 int sqSize;
+float sqlen;
+
 Minim minim;
 AudioPlayer input;
 FFT fftReal;
@@ -26,15 +28,17 @@ Textlabel label;
 
 ControlP5 cp5;
 
-int size = 800;
+int sizeX = displayWidth;
+int sizeY = displayHeight;
 
 int num = 11;
 
 
-
-
 float[][] myEdges;
 int[][] myLinks;
+
+float [] avgIntensity;
+float [] avgIntensityOld;
  
 float t = 0;
 int secondsRun = 0;
@@ -42,17 +46,28 @@ int secondsRun = 0;
 PShader vertexShader;
 int mode = 0;
 
+float colorOverTime = 50;
+float targetColor = 0;
+float targetColorOld = 0;
+
+float max;
+int maxElement;
+float [] maxElements;
+
+boolean sketchFullScreen() {
+  return true;
+}
+
 void setup(){
-  Global.topLayer = createGraphics(size,size);
-  
-  size (size, size, OPENGL);
+  Global.topLayer = createGraphics(displayWidth,displayHeight);
+  sizeX = displayWidth;
+  sizeY = displayHeight;
+  size (sizeX, sizeY, OPENGL);
   cp5 = new ControlP5(this);
   minim = new Minim(this);
   
-  input = minim.loadFile("data/044. Ray Charles - Georgia On My Mind (1960).mp3");
-  
-
-  
+  input = minim.loadFile("data/test.mp3");
+    
   float x = 20;
   float y = 20;
   float sliderSpace = 20;
@@ -77,7 +92,7 @@ void setup(){
   points[3][0] = size;
   points[3][1] = size;
   */
-  Global.fieldSize = size;
+ // Global.fieldSize = size;
   
   
  // smooth();
@@ -90,9 +105,7 @@ void setup(){
    input.loop();
   fftReal = new FFT( input.bufferSize(), input.sampleRate () );
   renew ();
-  ortho();
-  
-  
+  ortho();  
 }
 
 
@@ -125,7 +138,11 @@ void renew(){
   fftReal.logAverages(bandbreite, unterteilungenOld);
   background (0);   
   sqSize = floor(sqrt(fftReal.avgSize())* 0.8);
+  
   Global.points = new float[(sqSize*sqSize) + (sqSize+2)*4][7];
+  sqlen = Global.points.length - ((sqSize+2)*4);
+  avgIntensity = new float[(int)sqlen];
+  avgIntensityOld = new float[(int)sqlen];
   /*
   0,1  act. Postion X/Y
   2,3  dir. Vector
@@ -137,39 +154,46 @@ void renew(){
   if (mode == 0){
     for (int i = 0; i<sqSize; i++){
       for (int ii = 0; ii<sqSize; ii++){
-        Global.points[i*sqSize+ii][0] = (size/sqSize) * (i+0.5) + random (-5, 5);
-        Global.points[i*sqSize+ii][1] = (size/sqSize) * (ii+0.5) + random (-5, 5);
+        Global.points[i*sqSize+ii][0] = (sizeX/sqSize) * (i+0.5) + random (-5, 5);
+        Global.points[i*sqSize+ii][1] = (sizeY/sqSize) * (ii+0.5) + random (-5, 5);
        // println (Global.points[i*sqSize+ii][0]+ " // "+Global.points[i*sqSize+ii][1]);
         
         Global.points[i*sqSize+ii][5] = Global.points[i*sqSize+ii][0];
         Global.points[i*sqSize+ii][6] = Global.points[i*sqSize+ii][1];
       }
     }
+    /*
+    for (int i = 0; i<sqSize*sqSize; i++){   
+      Global.points[i][0] = ((i % sqSize)+1)* (sizeX/(sqSize+1)) + random (-5, 5);
+      Global.points[i][1] = floor ((i/sqSize)+1)* (sizeY/(sqSize+1)) + random (-5, 5);
+      Global.points[i][5] = Global.points[i][0];
+      Global.points[i][6] = Global.points[i][1];
+    }*/
   }
  
  //Random
   if (mode == 1){
     for (int i = 0; i<sqSize*sqSize; i++){   
-      Global.points[i][0] = random(0, size);
-      Global.points[i][1] = random(0, size);   
+      Global.points[i][0] = random(0, sizeX);
+      Global.points[i][1] = random(0, sizeY);   
       Global.points[i][5] = Global.points[i][0];
       Global.points[i][6] = Global.points[i][1];
     }
   }
   
   int arrsize = sqSize*sqSize;
-  float step = size / (sqSize);
+  float step = sizeX / (sqSize);
   for (int i = 0; i<sqSize+2; i++){
     Global.points[arrsize+i*4+0][0] = step * i;
     Global.points[arrsize+i*4+0][1] = 0; 
     
     Global.points[arrsize+i*4+1][0] = step * i;
-    Global.points[arrsize+i*4+1][1] = size; 
+    Global.points[arrsize+i*4+1][1] = sizeY; 
     
     Global.points[arrsize+i*4+2][0] = 0;
     Global.points[arrsize+i*4+2][1] = step * i; 
     
-    Global.points[arrsize+i*4+3][0] = size;
+    Global.points[arrsize+i*4+3][0] = sizeX;
     Global.points[arrsize+i*4+3][1] = step * i; 
   }
   
@@ -194,7 +218,10 @@ void renew(){
 void generateVertices(){  
   Global.myDelaunay = new Delaunay( Global.points );
   myLinks = Global.myDelaunay.getLinks(); 
+  
   Global.vertices = new IntList();
+  Global.links = Global.myDelaunay.getLinks();
+  maxElements = new float [Global.points.length];
   for(int i=0; i<Global.points.length; i++)
   {
       int [] links = Global.myDelaunay.getLinked(i);
@@ -225,12 +252,44 @@ void generateVertices(){
 
 void draw (){  
   if (!lock){
+    
   float avg = 0;   
+  
+ 
+  //float minElementOld = minElement;
+  maxElement = 0;
+  max = 0;
   for(int i=0; i<Global.points.length; i++)
-  {    
-     avg += fftReal.getAvg(i);
+  {  
+      float val = fftReal.getAvg(i);
+     avg += val;
+     if (val > max){
+        max = val;
+        maxElement = i; 
+     }     
   }
   avg = avg / Global.points.length;
+  maxElements[maxElement]++;
+  
+  if (frameCount % 100 == 0){
+     float newMax = 0;
+     float newMaxElement = 0;
+     for(int i=0; i<Global.points.length; i++)
+     {
+        float val = maxElements[i];
+        if (val > newMax){
+           newMax = val;
+           newMaxElement = i;
+        }
+     }
+    
+     targetColorOld = targetColor;
+     targetColor = map (newMaxElement, Global.points.length*0, Global.points.length*1, 0, 100); 
+     maxElements = new float[Global.points.length];
+  } else {
+     colorOverTime = map (frameCount % 100, 0,49, targetColorOld, targetColor);
+  }
+  
   
   
   //println (avg);
@@ -242,7 +301,7 @@ void draw (){
   }
   
   colorMode(HSB, 100);
-  //background (0);   
+  background (0);   
   t += 1/frameRate; // /10;
   
   int secs = floor(t);
@@ -259,14 +318,25 @@ void draw (){
   //blendMode(ADD);  
  
  // translate (Global.fieldSize/2, Global.fieldSize/2, 0)
-  
+  //colorOverTime += map (minElement, 0, Global.points.length, -1, 1);
+  //  float col = map (colorOverTime, 0, 100, 0, 100);
+    
   if (Global.mode == 1){
     pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
+    
+    directionalLight(colorOverTime,100,100, 1,0,0.1);
+    directionalLight(colorOverTime,100,100, -1,0,0.1);
+    directionalLight(colorOverTime,100,100, 0,1,0.1);
+    directionalLight(colorOverTime,100,100, 0,-1,0.1);
+    
   } if (Global.mode == 2){ 
-    directionalLight(0,10,40, 1,0,-0.1);
-    directionalLight(0,10,40, -1,0,-0.1);
-    directionalLight(0,10,40, 0,1,-0.1);
-    directionalLight(0,10,40, 0,-1,-0.1);
+    
+    pointLight(60,100,6, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
+    
+    directionalLight(0,00,40, 1,0,-0.1);
+    directionalLight(0,00,40, -1,0,-0.1);
+    directionalLight(0,00,40, 0,1,-0.1);
+    directionalLight(0,00,40, 0,-1,-0.1);
   } if (Global.mode == 3){ 
     pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, -Global.fieldSize);  
   } 
@@ -277,34 +347,47 @@ void draw (){
 
   fftReal.forward(input.left);
   
-  float sqlen = Global.points.length - ((sqSize+2)*4);
+  
   
   for(int i=1; i<sqlen; i++)
   { 
     int [] links = Global.myDelaunay.getLinked(i);
     float locX = Global.points[i][0];
     float locY = Global.points[i][1];   
+        
+        if (frameCount % 5 == 0){
+           float delta = avgIntensity[i] - avgIntensityOld[i];
+           delta = min (500, delta);
+           if (Global.lineMode == 1 && delta > 20){
+             generateParticles (i,  delta/3 , /*0.01*/ ( delta)  /5000  , (i / sqlen));
+           } else if (Global.lineMode == 2 ){
+             generateParticles (i,  delta/100  , /*0.01*/  (delta/10 ) /10000  , (i / sqlen)*2);
+           } 
+            avgIntensity[i] = avgIntensityOld[i]; 
+            avgIntensity[i] = 0;
+         }
+   
     
     if ( (fftReal.getAvg(i))*5 > Global.points[i][4] && fftReal.getAvg(i) > avg * 0 ){
        Global.points[i][4] = (fftReal.getAvg(i))*5;
        //if (fftReal.getAvg(i) > avg*random (10,15)){
          //println (fftReal.getAvg(i) / avg);
-         if (frameCount % 5 ==0){
-         generateParticles (i, fftReal.getAvg(i), /*0.01*/ fftReal.getAvg(i)/5000  , (i / sqlen));
-         }
+         avgIntensity[i] += (fftReal.getAvg(i));
+         
+         
        //}
     } else {
        Global.points[i][4] = Global.points[i][4] * 0.98;
     }
     
-    Global.points[i][4] = constrain (Global.points[i][4], 0, size/2);
+    Global.points[i][4] = constrain (Global.points[i][4], 0, sizeY/2);
     
     float locGrv = Global.points[i][4];
     fill ( Global.points[i][4] ,100, 100 );
     
     int grvX = 0;
     int grvY = 0;
-    float maxDist = 5 * (size / unterteilungenOld);
+    float maxDist = 5 * (sizeX / unterteilungenOld);
         
     for (int ii=1; ii < links.length; ii++){
       float [] pnt = Global.points[links[ii]];
@@ -336,20 +419,35 @@ void draw (){
     beginShape(TRIANGLES); 
     noStroke(); 
     fill (0, 0, 100);
+    
+   
+    
     for (int i = 0; i<Global.vertices.size(); i=i+3){    
        // fill ( 75, (Global.points[Global.vertices.get(i+0)][4]+Global.points[Global.vertices.get(i+1)][4]+Global.points[Global.vertices.get(i+2)][4])/10, 100 );
+        
         vertex(Global.points[Global.vertices.get(i)][0], Global.points[Global.vertices.get(i)][1], Global.points[Global.vertices.get(i)][4]/4);    
         vertex(Global.points[Global.vertices.get(i+1)][0], Global.points[Global.vertices.get(i+1)][1], Global.points[Global.vertices.get(i+1)][4]/4);
         vertex(Global.points[Global.vertices.get(i+2)][0], Global.points[Global.vertices.get(i+2)][1], Global.points[Global.vertices.get(i+2)][4]/4);
     }  
     endShape(); 
-  } else {
+  }
+  
+  if (Global.lineMode == 2) {
     stroke (0, 100,100);
-    /*for (int i =0; i< Global.point.length; i++){
-      int [] links = Global.myDelaunay.getLinked(i);
-      for (int ii=0; ii<links.length; ii++){
-      }
-    }*/
+    for (int i =0; i< Global.links.length; i++){
+        int startPoint = Global.links[i][0];
+        int endPoint = Global.links[i][1];
+        float newCol = 0;
+        if (Global.mode == 1){
+          newCol = 0;
+        } else if (Global.mode == 2){
+          newCol = 30;
+        }
+        
+        stroke(newCol,100, 100, max(5, Global.points[startPoint][4]/10));
+        strokeWeight (1);
+        line (Global.points[startPoint][0], Global.points[startPoint][1], 600, Global.points[endPoint][0], Global.points[endPoint][1], 600);
+    }
   }
   
  /*beginShape(); 
@@ -378,6 +476,11 @@ void draw (){
 //Global.topLayer.fill(0,20);
 //Global.topLayer.blendMode(ADD); 
 
+  if (Global.lineMode == 1){
+  } else if (Global.lineMode == 2) {
+    beginShape(LINES);
+  }
+
   for (Iterator<Particle> particleIter = Global.particles.iterator(); particleIter.hasNext();){ 
       Particle particle = particleIter.next(); 
       if(!particle.update()){ 
@@ -387,6 +490,11 @@ void draw (){
         particle.draw();
       }
    } 
+   if (Global.lineMode == 1){
+  } else if (Global.lineMode == 2) {
+    endShape();
+  }
+   
 //Global.topLayer.endDraw();
    for (Iterator<Particle> particleIter = Global.particlesToAdd.iterator(); particleIter.hasNext();){ 
       Particle thisParticle = particleIter.next(); 
@@ -397,6 +505,7 @@ void draw (){
  //println (Global.particles.size());
  
   popMatrix();
+  
   }
 }
 
@@ -423,7 +532,14 @@ void keyPressed() {
   }
   
   if (key == 'e'){  // dunkel
-    Global.mode = 3;
+    Global.lineMode = 1;
+  }
+  
+  if (key == 'r'){  // dunkel
+    lock = true;
+    Global.lineMode = 2;
+    Global.particles = new ArrayList<Particle>();
+    lock = false;
   }
   
    if (key == '1'){  // mode 0

@@ -14,6 +14,7 @@ static class Global {
   static public float escapeVelocity = 5;
   
   static public float [][] points;
+  static public int [][] links;
   static public IntList vertices = new IntList();
   
   static public List<Particle> particles = new ArrayList<Particle>();
@@ -22,6 +23,7 @@ static class Global {
   static public Delaunay myDelaunay;
   
   static public int mode = 1;
+  static public int lineMode = 1;
   
   static public float relation = 3.5;
   static public float speed = 0.01;
