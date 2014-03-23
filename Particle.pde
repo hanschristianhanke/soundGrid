@@ -28,10 +28,10 @@ class Particle {
   }  
   
   public boolean update(){
-    
+    float fps = 1/frameRate;
     if (Global.lineMode == 1){
       //intensity -= 1/frameRate;
-      float fps = 1/frameRate;
+     
       //speed *= 0.999;
       speed -= fps/50;
       intensity -= fps*10;
@@ -46,9 +46,11 @@ class Particle {
       return intensity > 0.2 && position <1;
     } else if (Global.lineMode == 2){
       //intensity -= 1/frameRate;
-      speed *= 0.999;
-      intensity *= 0.99;
-      position += speed*30;      
+      //speed *= 0.999;
+      speed -= fps/10;
+      //intensity *= 0.99;
+      intensity -= fps*10;
+      position = position + speed/100;      
       x = map (position, 0, 1, Global.points[startNode][0], Global.points[endNode][0]);
       y = map (position, 0, 1, Global.points[startNode][1], Global.points[endNode][1]);
       z = map (position, 0, 1, Global.points[startNode][4]/4, 500);      
@@ -61,35 +63,29 @@ class Particle {
   }
   
   public void draw(){
-    
-   if (Global.lineMode == 1){
-     // strokeWeight (intensity);
-     float newCol;
+    float newCol;
       if (Global.mode == 1){
         newCol = map (col, 0,1, 60,100); 
       } else {
         newCol = map (col, 0,1, 0,60);
       }
      
+   if (Global.lineMode == 1){
+     // strokeWeight (intensity);
+     
       stroke(newCol,100, 100, 100*map(intensity, 0.1, 1, 0, 1)*(1-position) );//max(50, intensity*10));
-      strokeWeight ( max (1,intensity/10));
+      strokeWeight ( max (1,intensity/5));
      // stroke(col,100,100);      
      point (x,y, 600);
    //vertex(x,y,600);
  
  } else if (Global.lineMode == 2){
-     float newCol;
-      if (Global.mode == 1){
-        newCol = map (col, 0,1, 60,100); 
-      } else {
-        newCol = map (col, 0,1, 0,60);
-      }
      
      //beginShape(LINES);
      //strokeWeight (1);
-      stroke(newCol,100, 100, 100*map(intensity, 0.1, 1, 0, 1)*(1-position));
+      stroke(newCol,100, 100, 100*map(intensity, 0.1, 2, 0, 1)*(1-position));
       vertex(Global.points[startNode][0], Global.points[startNode][1], 600);
-     stroke(newCol,100, 100, max(5, intensity));
+     stroke(newCol,100, 100, max(0, intensity));
       vertex(x,y,600);
  
       //stroke(newCol,100, 100, max(5, intensity*5));

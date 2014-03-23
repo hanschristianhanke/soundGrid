@@ -8,26 +8,36 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 import java.util.Iterator;
 
-String [] songs = new String[]{ "12 Morning Breaks", "CraveYou", "moonbootica", "Super Flu & Andhim - Reeves (Original mix)(720p_H.264-AAC)"};
+String [] songs = new String[]{ "04 Gentle Piece", "12 Morning Breaks", "CraveYou", "moonbootica", "SuperFlu"};
 int actualSong = 0;
 
 boolean lock = false;
-boolean done = false;
 
 int bandbreite = 50;
 int unterteilungen = 8;
+boolean darkMode = false;
+boolean song = false;
+int particles;
 
 int bandbreiteOld;
 int unterteilungenOld;
+boolean darkModeOld = false;
+boolean songOld = false;
+int particlesOld = 0;
+
 int sqSize;
 float sqlen;
+int menuBackgroundInt = 80;
+boolean done = false;
 
 Minim minim;
 AudioPlayer input;
 FFT fftReal;
-Textlabel label;
+
 
 ControlP5 cp5;
+RadioButton r;
+Textlabel label;
 
 int sizeX = displayWidth;
 int sizeY = displayHeight;
@@ -59,6 +69,7 @@ boolean sketchFullScreen() {
   return false;
 }
 
+
 void setup(){
   //Global.topLayer = createGraphics(displayWidth,displayHeight);
   sizeX = 1280;//displayWidth;
@@ -69,14 +80,22 @@ void setup(){
   if (frame != null) {
     frame.setResizable(true);
   }
-  input = minim.loadFile("data/test.mp3");
-    
-  float x = 20;
-  float y = 20;
+  input = minim.loadFile("data/"+songs[actualSong]+".mp3");
+  
+  
+  float x = 10;
+  float y = -10;
   float sliderSpace = 20;
   cp5.setAutoDraw(false);
-  cp5.addSlider("bandbreite").setPosition(x,y +=sliderSpace).setRange(10,5000);
-  cp5.addSlider("unterteilungen").setPosition(x,y +=sliderSpace).setRange(1,75);
+  cp5.addSlider("bandbreite").setPosition(x,y +=sliderSpace).setRange(10,500).setColorLabel(0);
+  cp5.addSlider("unterteilungen").setPosition(x,y +=sliderSpace).setRange(1,25).setColorLabel(0);
+  cp5.addRadioButton("Mode").setPosition(x, 78).setColorValue(255).setItemsPerRow(2).setSpacingColumn(35).addItem("Grid",1).addItem("Random",2).activate(0);
+  cp5.addButton("Next Song").setPosition(x,y +=sliderSpace).setColorValue(255);
+  cp5.addRadioButton("Color").setPosition(x+=sliderSpace*4,y).setColorLabel(0).setSpacingRow(5).addItem("Bright",1).addItem("Dark",2).activate(0);
+ 
+  cp5.addRadioButton("Particles").setPosition(x+=sliderSpace*2.5,y).setColorLabel(0).setSpacingRow(5).addItem("none",0).addItem("points",1).addItem("lines",2).activate(0);
+  label = cp5.addTextlabel("songname", "").setPosition(7,y +=sliderSpace*2.5).setColorValue(0);
+  label.setValue ("Song: "+songs[actualSong]);
   
   bandbreiteOld = bandbreite;
   unterteilungenOld = unterteilungen;
@@ -87,9 +106,39 @@ void setup(){
   
    renew ();
    ortho();  
+   done = true;
 }
 
-
+void controlEvent(ControlEvent theEvent) {
+  if(theEvent.isGroup() && theEvent.group().name()=="Particles") { 
+    lock = true;
+    Global.lineMode = (int)theEvent.group().value();
+    Global.particles = new ArrayList<Particle>();
+    lock = false;
+  } else if(theEvent.isGroup() && theEvent.group().name()=="Color") { 
+    Global.mode = (int)theEvent.group().value();
+    if ((int)theEvent.group().value() == 1){
+      menuBackgroundInt = 80;
+    } else {
+      menuBackgroundInt = 30;
+    }
+  } else if(theEvent.isController() && theEvent.controller().name()=="Next Song") {
+    input.pause();
+    actualSong++;
+    actualSong = actualSong%(songs.length);
+    input = minim.loadFile(songs[actualSong]+".mp3");
+    label.setValue ("Song: "+songs[actualSong]);
+    input.play();
+  } else if(theEvent.isGroup() && theEvent.group().name()=="Mode") {     
+    int val = (int)theEvent.group().value()-1;
+    if (done && val >=0){
+      lock = true;
+      mode = val;
+      renew();
+      lock = false;
+    }
+  } 
+}
 
 boolean containsValue (int [] array, int value){
    for  (int i = 0; i< array.length; i++){
@@ -119,7 +168,7 @@ void renew(){
   fftReal = new FFT( input.bufferSize(), input.sampleRate () );
   fftReal.logAverages(bandbreiteOld, unterteilungenOld);
   background (0);   
-  sqSize = floor(sqrt(fftReal.avgSize()) * 0.8);
+  sqSize = floor(sqrt(fftReal.avgSize()) * 0.9);
   Global.points = new float[(sqSize*sqSize) + (sqSize+2)*4][7];
   Global.particles = new ArrayList<Particle>();
   Global.particlesToAdd = new ArrayList<Particle>(); 
@@ -222,6 +271,8 @@ void draw (){
   
   if (!lock){
     
+    
+    
   float avg = 0;   
   maxElement = 0;
   max = 0;
@@ -238,6 +289,7 @@ void draw (){
   
   avg = avg / Global.points.length;
   maxElements[maxElement]++;
+  
   
   if (frameCount % 100 == 0){
      float newMax = 0;
@@ -259,9 +311,14 @@ void draw (){
   }
   
   
-  
+  blendMode(BLEND);
   colorMode(HSB, 100);
   background (0);   
+  
+  noStroke();
+  fill(colorOverTime,10, menuBackgroundInt);
+  rect (0,0, 200,120);
+  cp5.draw();
   t += 1/frameRate; // /10;
   
   int secs = floor(t);
@@ -305,7 +362,7 @@ void draw (){
            if (Global.lineMode == 1 && delta > 20){
              generateParticles (i,  delta/3 , /*0.01*/ ( delta)  /5000  , (i / sqlen));
            } else if (Global.lineMode == 2 ){
-             generateParticles (i,  delta/100  , /*0.01*/  (delta/10 ) /10000  , (i / sqlen)*2);
+             generateParticles (i,  delta/3  , /*0.01*/  (delta/10 ) /10  , (i / sqlen)*2);
            } 
             avgIntensity[i] = avgIntensityOld[i]; 
             avgIntensity[i] = 0;
@@ -404,18 +461,14 @@ void draw (){
           newCol = 30;
         }
         
-        stroke(newCol,100, 100, max(5, Global.points[startPoint][4]/10));
+        stroke(newCol,100, 100, max(0, Global.points[startPoint][4]/10));
         strokeWeight (1);
         line (Global.points[startPoint][0], Global.points[startPoint][1], 600, Global.points[endPoint][0], Global.points[endPoint][1], 600);
     }
-  }
-  
-
-  
-  if (Global.lineMode == 1){
-  } else if (Global.lineMode == 2) {
+    
     beginShape(LINES);
   }
+  
   
   for (Iterator<Particle> particleIter = Global.particles.iterator(); particleIter.hasNext();){ 
       Particle particle = particleIter.next(); 
@@ -426,8 +479,7 @@ void draw (){
       }
    } 
    
-   if (Global.lineMode == 1){
-  } else if (Global.lineMode == 2) {
+  if (Global.lineMode == 2) {
     endShape();
   }
   
@@ -435,11 +487,10 @@ void draw (){
       Particle thisParticle = particleIter.next(); 
       Global.particles.add (thisParticle);
       particleIter.remove(); 
-   } 
-   
+   }    
   popMatrix();  
   }
-  cp5.draw();
+  
 }
 
 int getPoisson(double lambda) {
@@ -456,6 +507,7 @@ int getPoisson(double lambda) {
 }
 
 void keyPressed() { 
+    println(key);
   if (key == 'q'){         // dell
     Global.mode = 1;
   } 
@@ -465,7 +517,10 @@ void keyPressed() {
   }
   
   if (key == 'e'){  // dunkel
+    lock = true;
     Global.lineMode = 1;
+    Global.particles = new ArrayList<Particle>();
+    lock = false;
   }
   
   if (key == 'r'){  // dunkel
@@ -524,3 +579,4 @@ public void generateParticles(int startNode, float intensity, float speed, float
       }      
     }
 }
+

@@ -22,7 +22,7 @@ static class Global {
   static public Delaunay myDelaunay;
   
   static public int mode = 1;
-  static public int lineMode = 1;
+  static public int lineMode = 0;
   
   static public float relation = 3.5;
   static public float speed = 0.01;
