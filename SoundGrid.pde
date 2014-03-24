@@ -8,7 +8,7 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 import java.util.Iterator;
 
-String [] songs = new String[]{ "04 Gentle Piece", "02 Don't be light (Mr Oizo Remix)", "CraveYou", "moonbootica", "SuperFlu"};
+String [] songs = new String[]{ "04 Gentle Piece", "02 Don't be light (Mr Oizo Remix)", "03 With Love"};
 int actualSong = 0;
 
 boolean lock = false;
@@ -173,7 +173,7 @@ void renew(){
   fftReal = new FFT( input.bufferSize(), input.sampleRate () );
   fftReal.logAverages(bandbreiteOld, unterteilungenOld);
   background (0);   
-  sqSize = floor(sqrt(fftReal.avgSize()) * 0.8);
+  sqSize = floor(sqrt(fftReal.avgSize()) * 0.81);
   Global.points = new float[(sqSize*sqSize) + (sqSize+2)*4][7];
   Global.particles = new ArrayList<Particle>();
   Global.particlesToAdd = new ArrayList<Particle>(); 
@@ -525,7 +525,6 @@ int getPoisson(double lambda) {
 }
 
 void keyPressed() { 
-    println(key);
   if (key == 'q'){         // dell
     Global.mode = 1;
   } 
