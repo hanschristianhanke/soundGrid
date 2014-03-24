@@ -168,7 +168,7 @@ void renew(){
   fftReal = new FFT( input.bufferSize(), input.sampleRate () );
   fftReal.logAverages(bandbreiteOld, unterteilungenOld);
   background (0);   
-  sqSize = floor(sqrt(fftReal.avgSize()) * 0.9);
+  sqSize = floor(sqrt(fftReal.avgSize()) * 0.8);
   Global.points = new float[(sqSize*sqSize) + (sqSize+2)*4][7];
   Global.particles = new ArrayList<Particle>();
   Global.particlesToAdd = new ArrayList<Particle>(); 
@@ -291,7 +291,7 @@ void draw (){
   maxElements[maxElement]++;
   
   
-  if (frameCount % 100 == 0){
+  if (frameCount % 60 == 0){
      float newMax = 0;
      float newMaxElement = 0;
      for(int i=0; i<Global.points.length; i++)
@@ -307,7 +307,7 @@ void draw (){
      targetColor = map (newMaxElement, Global.points.length*0, Global.points.length*1, 0, 100); 
      maxElements = new float[Global.points.length];
   } else {
-     colorOverTime = map (frameCount % 100, 0,99, targetColorOld, targetColor);
+     colorOverTime = map (frameCount % 60, 0,59, targetColorOld, targetColor);
   }
   
   
@@ -352,10 +352,12 @@ void draw (){
   
   for(int i=1; i<sqlen; i++)
   { 
+    
+   float realAVG =  fftReal.getAvg(i);
     int [] links = Global.myDelaunay.getLinked(i);
     float locX = Global.points[i][0];
     float locY = Global.points[i][1];          
-        if (frameCount % 2 == 0){
+        if (frameCount % 3 == 0){
           //println ("fps "+frameRate);
            float delta = avgIntensity[i] - avgIntensityOld[i];
            delta = min (500, delta);
@@ -368,9 +370,9 @@ void draw (){
             avgIntensity[i] = 0;
          }
     
-    if ( (fftReal.getAvg(i))*5 > Global.points[i][4] && fftReal.getAvg(i) > avg * 0 ){
-       Global.points[i][4] = (fftReal.getAvg(i))*5;
-       avgIntensity[i] += (fftReal.getAvg(i));
+    if ( realAVG*5 > Global.points[i][4] && realAVG > avg * 0 ){
+       Global.points[i][4] = realAVG*5;
+       avgIntensity[i] += realAVG;
     } else {
        Global.points[i][4] = Global.points[i][4] * 0.98;
     }
@@ -402,7 +404,7 @@ void draw (){
     
     grvX += -(Global.points[i][0] - Global.points[i][5])*avg * (28.5-Global.relation) *sizeCompensation; //; //*25;
     grvY += -(Global.points[i][1] - Global.points[i][6])*avg * (28.5-Global.relation) *sizeCompensation; //*25;  
-      
+            
     Global.points[i][2] = grvX * 1/frameRate*Global.speed; //0.01;
     Global.points[i][3] = grvY * 1/frameRate*Global.speed; //0.01;
     
@@ -413,7 +415,7 @@ void draw (){
   if (Global.mode != 3){
     
     noStroke(); 
-    fill (0, 0, 100);
+    fill (/*55*/ (colorOverTime+50)%100, 25, 100);
     beginShape(TRIANGLES); 
     /* 
     for (int i = 0; i<Global.vertices.size(); i=i+3){  
