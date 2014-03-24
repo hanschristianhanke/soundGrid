@@ -8,10 +8,11 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 import java.util.Iterator;
 
-String [] songs = new String[]{ "04 Gentle Piece", "12 Morning Breaks", "CraveYou", "moonbootica", "SuperFlu"};
+String [] songs = new String[]{ "04 Gentle Piece", "02 Don't be light (Mr Oizo Remix)", "CraveYou", "moonbootica", "SuperFlu"};
 int actualSong = 0;
 
 boolean lock = false;
+boolean colorful = false;
 
 int bandbreite = 50;
 int unterteilungen = 8;
@@ -29,6 +30,8 @@ int sqSize;
 float sqlen;
 int menuBackgroundInt = 80;
 boolean done = false;
+
+boolean debugMode = false;
 
 Minim minim;
 AudioPlayer input;
@@ -89,24 +92,23 @@ void setup(){
   cp5.setAutoDraw(false);
   cp5.addSlider("bandbreite").setPosition(x,y +=sliderSpace).setRange(10,500).setColorLabel(0);
   cp5.addSlider("unterteilungen").setPosition(x,y +=sliderSpace).setRange(1,25).setColorLabel(0);
-  cp5.addRadioButton("Mode").setPosition(x, 78).setColorValue(255).setItemsPerRow(2).setSpacingColumn(35).addItem("Grid",1).addItem("Random",2).activate(0);
+  cp5.addRadioButton("Mode").setPosition(x, 78).setColorValue(255).setItemsPerRow(2).setSpacingColumn(23).addItem("Grid",1).addItem("Random",2).activate(0).setColorLabel(0);
   cp5.addButton("Next Song").setPosition(x,y +=sliderSpace).setColorValue(255);
   cp5.addRadioButton("Color").setPosition(x+=sliderSpace*4,y).setColorLabel(0).setSpacingRow(5).addItem("Bright",1).addItem("Dark",2).activate(0);
- 
+  cp5.addRadioButton("ColorMode").setPosition(x,y+sliderSpace*1.4).setColorLabel(0).setSpacingRow(5).addItem("Colors",1);
   cp5.addRadioButton("Particles").setPosition(x+=sliderSpace*2.5,y).setColorLabel(0).setSpacingRow(5).addItem("none",0).addItem("points",1).addItem("lines",2).activate(0);
   label = cp5.addTextlabel("songname", "").setPosition(7,y +=sliderSpace*2.5).setColorValue(0);
   label.setValue ("Song: "+songs[actualSong]);
   
   bandbreiteOld = bandbreite;
   unterteilungenOld = unterteilungen;
-  //label = cp5.addTextlabel("label").setPosition(x,y +=sliderSpace).setFont(createFont("Arial",20));
    
-   input.play();
-   input.loop();
+  input.play();
+  input.loop();
   
-   renew ();
-   ortho();  
-   done = true;
+  renew ();
+  ortho();  
+  done = true;
 }
 
 void controlEvent(ControlEvent theEvent) {
@@ -115,13 +117,16 @@ void controlEvent(ControlEvent theEvent) {
     Global.lineMode = (int)theEvent.group().value();
     Global.particles = new ArrayList<Particle>();
     lock = false;
-  } else if(theEvent.isGroup() && theEvent.group().name()=="Color") { 
-    Global.mode = (int)theEvent.group().value();
+  } else if(theEvent.isGroup() && theEvent.group().name()=="Color") {    
     if ((int)theEvent.group().value() == 1){
       menuBackgroundInt = 80;
-    } else {
+      Global.mode = (int)theEvent.group().value();
+    } else if ((int)theEvent.group().value() == 2){
       menuBackgroundInt = 30;
+      Global.mode = (int)theEvent.group().value();
     }
+  } else if(theEvent.isGroup() && theEvent.group().name()=="ColorMode") {
+    colorful = ((int)theEvent.group().value() == 1);    
   } else if(theEvent.isController() && theEvent.controller().name()=="Next Song") {
     input.pause();
     actualSong++;
@@ -327,26 +332,28 @@ void draw (){
   }
   
   pushMatrix();
-  
-  if (Global.mode == 1){
-    pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
+  if (!debugMode){
+    if (Global.mode == 1){
+      pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
+      
+      directionalLight(colorOverTime,100,100, 1,0,0.1);
+      directionalLight(colorOverTime,100,100, -1,0,0.1);
+      directionalLight(colorOverTime,100,100, 0,1,0.1);
+      directionalLight(colorOverTime,100,100, 0,-1,0.1);
+      
+    } if (Global.mode == 2){            
+      pointLight(60,100,6, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
+      
+      directionalLight(0,00,40, 1,0,-0.1);
+      directionalLight(0,00,40, -1,0,-0.1);
+      directionalLight(0,00,40, 0,1,-0.1);
+      directionalLight(0,00,40, 0,-1,-0.1);
+      
+    } if (Global.mode == 3){       
+      pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, -Global.fieldSize);  
     
-    directionalLight(colorOverTime,100,100, 1,0,0.1);
-    directionalLight(colorOverTime,100,100, -1,0,0.1);
-    directionalLight(colorOverTime,100,100, 0,1,0.1);
-    directionalLight(colorOverTime,100,100, 0,-1,0.1);
-    
-  } if (Global.mode == 2){ 
-    
-    pointLight(60,100,6, Global.fieldSize/4, Global.fieldSize/4, Global.fieldSize);  
-    
-    directionalLight(0,00,40, 1,0,-0.1);
-    directionalLight(0,00,40, -1,0,-0.1);
-    directionalLight(0,00,40, 0,1,-0.1);
-    directionalLight(0,00,40, 0,-1,-0.1);
-  } if (Global.mode == 3){ 
-    pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, -Global.fieldSize);  
-  } 
+    } 
+  }
   
   fftReal.forward(input.left);  
   
@@ -415,7 +422,16 @@ void draw (){
   if (Global.mode != 3){
     
     noStroke(); 
-    fill (/*55*/ (colorOverTime+50)%100, 25, 100);
+    if (colorful){
+      fill (/*55*/ (colorOverTime+50)%100, 25, 100);
+    } else {
+      fill (0, 0, 100); 
+    }
+    
+    if (debugMode){
+      fill (0, 0, 100); 
+      stroke (0);
+    }
     beginShape(TRIANGLES); 
     /* 
     for (int i = 0; i<Global.vertices.size(); i=i+3){  
@@ -571,6 +587,9 @@ void keyPressed() {
     input.play();
   }
   
+  if (key == 'd'){
+    debugMode = !debugMode;
+  }
 }
 
 public void generateParticles(int startNode, float intensity, float speed, float col){
