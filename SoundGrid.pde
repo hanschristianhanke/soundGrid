@@ -1,5 +1,4 @@
 import megamu.mesh.*;
-
 import java.util.List;
 import java.util.ArrayList;
 import controlP5.*;
@@ -8,83 +7,70 @@ import ddf.minim.analysis.*;
 import ddf.minim.spi.*;
 import java.util.Iterator;
 
-String [] songs = new String[]{ "04 Gentle Piece", "02 Don't be light (Mr Oizo Remix)", "03 With Love"};
-int actualSong = 0;
-
-boolean lock = false;
-boolean colorful = false;
-
-int bandbreite = 50;
-int unterteilungen = 8;
-boolean darkMode = false;
-boolean song = false;
-int particles;
-
-int bandbreiteOld;
-int unterteilungenOld;
-boolean darkModeOld = false;
-boolean songOld = false;
-int particlesOld = 0;
-
-int sqSize;
-float sqlen;
-int menuBackgroundInt = 80;
-boolean done = false;
-
-boolean debugMode = false;
-
 Minim minim;
 AudioPlayer input;
 FFT fftReal;
-
-
 ControlP5 cp5;
 RadioButton r;
 Textlabel label;
 
+String [] songs = new String[]{ "04 Gentle Piece", "02 Don't be light (Mr Oizo Remix)", "03 With Love"};
+
+boolean lock = false;
+boolean colorful = false;
+boolean darkMode = false;
+boolean song = false;
+boolean darkModeOld = false;
+boolean songOld = false;
+boolean done = false;
+boolean debugMode = false;
+
+int bandbreite = 50;
+int unterteilungen = 8;
+int particles;
+int bandbreiteOld;
+int unterteilungenOld;
+int actualSong = 0;
+int particlesOld = 0;
+int sqSize;
+int menuBackgroundInt = 80;
 int sizeX = displayWidth;
 int sizeY = displayHeight;
-
 int num = 11;
-
-
-float[][] myEdges;
+int secondsRun = 0;
+int mode = 0;
+int maxElement;
 int[][] myLinks;
 
-float [] avgIntensity;
-float [] avgIntensityOld;
- 
+float sqlen;
 float t = 0;
-int secondsRun = 0;
-
-PShader vertexShader;
-int mode = 0;
-
+float max;
 float colorOverTime = 50;
 float targetColor = 0;
 float targetColorOld = 0;
-
-float max;
-int maxElement;
+float [] avgIntensity;
+float [] avgIntensityOld;
 float [] maxElements;
+float [][] myEdges;
+
+PShader vertexShader;
 
 boolean sketchFullScreen() {
   return false;
 }
 
-
 void setup(){
-  //Global.topLayer = createGraphics(displayWidth,displayHeight);
   sizeX = 1280;//displayWidth;
   sizeY = 800;//displayHeight;
   size (sizeX, sizeY, P3D);
   cp5 = new ControlP5(this);
   minim = new Minim(this);
+
   if (frame != null) {
     frame.setResizable(true);
   }
-  input = minim.loadFile("data/"+songs[actualSong]+".mp3");
-  
+
+  input = minim.loadFile("data/"+songs[actualSong]+".mp3");  
   
   float x = 10;
   float y = -10;
@@ -160,7 +146,6 @@ boolean containsEachOther (int a, int [] arrayA, int b, int [] arrayB){
   }
   for  (int i = 0; i< arrayA.length; i++){
      for  (int ii = 0; ii< arrayB.length; ii++){
-       //println ("i = "+i+" ii = "+ii+" a = "+a+" b = "+b+" arrayA[i] "+arrayA[i]+" arrayB[ii] "+arrayB[ii] ); 
         if (arrayA[i] == b && arrayB[ii] == a){
            return true; 
         }
@@ -230,7 +215,6 @@ void renew(){
    
   fftReal.window(FFT.HAMMING);
   
-  //vertices
   generateVertices();
 }
 
@@ -242,26 +226,27 @@ void generateVertices(){
   maxElements = new float [Global.points.length];
   for(int i=0; i<Global.points.length; i++)
   {
-      int [] links = Global.myDelaunay.getLinked(i);
-      if (links.length == 2){
-          if ( containsValue(Global.myDelaunay.getLinked(links[0]), links[1]) && containsValue(Global.myDelaunay.getLinked(links[1]), links[0])){
-              Global.vertices.append(i);
-              Global.vertices.append(links[0]);
-              Global.vertices.append(links[1]);
+    int [] links = Global.myDelaunay.getLinked(i);
+    if (links.length == 2){
+        if ( containsValue(Global.myDelaunay.getLinked(links[0]), links[1]) && containsValue(Global.myDelaunay.getLinked(links[1]), links[0])){
+            Global.vertices.append(i);
+            Global.vertices.append(links[0]);
+            Global.vertices.append(links[1]);
+        }
+    } 
+    else if (links.length > 2){
+       for (int a=0; a<links.length; a++){
+        int [] linksA = Global.myDelaunay.getLinked(links[a]);
+        for (int b=a+1; b<links.length; b++){              
+          int [] linksB = Global.myDelaunay.getLinked(links[b]); 
+          if (containsEachOther(links[a], linksA, links[b], linksB)){
+             Global.vertices.append(i);
+             Global.vertices.append(links[a]);
+             Global.vertices.append(links[b]);
           }
-      } else if (links.length > 2){
-         for (int a=0; a<links.length; a++){
-            int [] linksA = Global.myDelaunay.getLinked(links[a]);
-            for (int b=a+1; b<links.length; b++){              
-              int [] linksB = Global.myDelaunay.getLinked(links[b]); 
-                 if (containsEachOther(links[a], linksA, links[b], linksB)){
-                   Global.vertices.append(i);
-                   Global.vertices.append(links[a]);
-                   Global.vertices.append(links[b]);
-                  }
-               }
-            }
-         }
+        }
+      }
+    }
   }
 }
 
@@ -275,26 +260,22 @@ void draw (){
   }
   
   if (!lock){
-    
-    
-    
   float avg = 0;   
   maxElement = 0;
   max = 0;
   
   for(int i=0; i<fftReal.avgSize(); i++)
   {  
-      float val = fftReal.getAvg(i);
-     avg += val;
-     if (val > max){
-        max = val;
-        maxElement = i; 
-     }     
+    float val = fftReal.getAvg(i);
+    avg += val;
+    if (val > max){
+      max = val;
+      maxElement = i; 
+    }     
   }
   
   avg = avg / Global.points.length;
-  maxElements[maxElement]++;
-  
+  maxElements[maxElement]++;  
   
   if (frameCount % 60 == 0){
      float newMax = 0;
@@ -314,7 +295,6 @@ void draw (){
   } else {
      colorOverTime = map (frameCount % 60, 0,59, targetColorOld, targetColor);
   }
-  
   
   blendMode(BLEND);
   colorMode(HSB, 100);
@@ -350,8 +330,7 @@ void draw (){
       directionalLight(0,00,40, 0,-1,-0.1);
       
     } if (Global.mode == 3){       
-      pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, -Global.fieldSize);  
-    
+      pointLight(0,0,100, Global.fieldSize/4, Global.fieldSize/4, -Global.fieldSize);      
     } 
   }
   
@@ -373,9 +352,9 @@ void draw (){
            } else if (Global.lineMode == 2 ){
              generateParticles (i,  delta/3  , /*0.01*/  (delta/10 ) /10  , (i / sqlen)*2);
            } 
-            avgIntensity[i] = avgIntensityOld[i]; 
-            avgIntensity[i] = 0;
-         }
+           avgIntensity[i] = avgIntensityOld[i]; 
+           avgIntensity[i] = 0;
+        }
     
     if ( realAVG*5 > Global.points[i][4] && realAVG > avg * 0 ){
        Global.points[i][4] = realAVG*5;
@@ -433,17 +412,6 @@ void draw (){
       stroke (0);
     }
     beginShape(TRIANGLES); 
-    /* 
-    for (int i = 0; i<Global.vertices.size(); i=i+3){  
-        float [] p1 = Global.points[Global.vertices.get(i)];
-        float [] p2 = Global.points[Global.vertices.get(i+1)];
-        float [] p3 = Global.points[Global.vertices.get(i+2)];  
-        vertex(p1[0], p1[1], -1000 +  p1[4]/4);    
-        vertex(p2[0], p2[1], -1000 +  p2[4]/4);
-        vertex(p3[0], p3[1], -1000 +  p3[4]/4);
-        //triangle(p1[0], p1[1], p1[4] /4, p2[0], p2[1], p2[4] /4, p3[0], p3[1], p3[4] /4  );
-        //triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]  );
-    }  */
     
     int count = 0;
     float [][] tempPoints = new float [3][];
@@ -452,18 +420,6 @@ void draw (){
       float [] thisPoint = Global.points[vertexIter.next()];
       vertex(thisPoint[0],thisPoint[1], -1000 +  thisPoint[4]/4);   
    } 
-   /*
-    for (int i = 0; i<Global.vertices.size(); i=i+3){  
-        float [] p1 = Global.points[Global.vertices.get(i)];
-        float [] p2 = Global.points[Global.vertices.get(i+1)];
-        float [] p3 = Global.points[Global.vertices.get(i+2)];  
-        vertex(p1[0], p1[1], -1000 +  p1[4]/4);    
-        vertex(p2[0], p2[1], -1000 +  p2[4]/4);
-        vertex(p3[0], p3[1], -1000 +  p3[4]/4);
-        //triangle(p1[0], p1[1], p1[4] /4, p2[0], p2[1], p2[4] /4, p3[0], p3[1], p3[4] /4  );
-        //triangle(p1[0], p1[1], p2[0], p2[1], p3[0], p3[1]  );
-    }  
-    */
     endShape(); 
   }
   
@@ -524,68 +480,7 @@ int getPoisson(double lambda) {
   return k - 1;
 }
 
-void keyPressed() { 
-  if (key == 'q'){         // dell
-    Global.mode = 1;
-  } 
- 
-  if (key == 'w'){  // dunkel
-    Global.mode = 2;
-  }
-  
-  if (key == 'e'){  // dunkel
-    lock = true;
-    Global.lineMode = 1;
-    Global.particles = new ArrayList<Particle>();
-    lock = false;
-  }
-  
-  if (key == 'r'){  // dunkel
-    lock = true;
-    Global.lineMode = 2;
-    Global.particles = new ArrayList<Particle>();
-    lock = false;
-  }
-  
-   if (key == '1'){  // mode 0
-    lock = true;
-    mode = 0;
-    renew();
-    lock = false;
-  }
-  
-   if (key == '2'){  // mode 1
-    lock = true;
-    mode = 1;
-    renew();
-    lock = false;
-  }
-  
-  if (key == ',' && Global.relation > 0){  // mode 0
-      Global.relation -= 0.1;
-  }
-  
-  if (key == '.' && Global.relation < 28.5){  // mode 1
-    Global.relation += 0.1;
-  }
-  
-  if (key == 'o' && Global.speed > 0){  // mode 0
-      Global.relation -= 0.001;
-  }
-  
-  if (key == 'p' && Global.speed < 1){  // mode 1
-    Global.relation += 0.001;
-  }
-  
-  if (key == 'm'){
-    input.pause();
-    actualSong++;
-    actualSong = actualSong%songs.length;
-    println ("sn "+actualSong);
-    input = minim.loadFile(songs[actualSong]+".mp3");
-    input.play();
-  }
-  
+void keyPressed() {  
   if (key == 'd'){
     debugMode = !debugMode;
   }

@@ -25,7 +25,5 @@ static class Global {
   static public int lineMode = 0;
   
   static public float relation = 3.5;
-  static public float speed = 0.01;
-  
-  
+  static public float speed = 0.01;  
 }
